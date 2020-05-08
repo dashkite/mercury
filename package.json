@@ -1,0 +1,41 @@
+{
+  "name": "@dashkite/mercury",
+  "version": "0.0.1",
+  "description": "Combinators for HTTP requests.",
+  "keywords": [
+    "http",
+    "request",
+    "functional",
+    "programming",
+    "combinator"
+  ],
+  "homepage": "https://github.com/dashkite/mercury#readme",
+  "bugs": {
+    "url": "https://github.com/dashkite/mercury/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dashkite/mercury.git"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "Dan Yoder",
+  "main": "build/npm/src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "files": [
+    "./build"
+  ],
+  "scripts": {
+    "test": "p9k test"
+  },
+  "devDependencies": {
+    "panda-9000": "^5.0.2",
+    "panda-builder": "^4.0.13"
+  },
+  "dependencies": {
+    "@ungap/event-target": "^0.1.0",
+    "panda-garden": "^5.0.0",
+    "panda-sky-client": "^4.0.1"
+  }
+}
