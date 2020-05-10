@@ -1,6 +1,6 @@
 {
   "name": "@dashkite/mercury",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Combinators for HTTP requests.",
   "keywords": [
     "http",
@@ -30,11 +30,17 @@
     "test": "p9k test"
   },
   "devDependencies": {
+    "amen": "^3.0.0",
+    "faker": "^4.1.0",
     "panda-9000": "^5.0.2",
-    "panda-builder": "^4.0.13"
+    "panda-builder": "^4.0.13",
+    "panda-confidential": "^3.0.0",
+    "panda-parchment": "^6.0.3",
+    "source-map-support": "^0.5.19"
   },
   "dependencies": {
     "@ungap/event-target": "^0.1.0",
+    "node-fetch": "^2.6.0",
     "panda-garden": "^5.0.0",
     "panda-sky-client": "^4.0.1"
   }

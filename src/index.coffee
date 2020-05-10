@@ -2,12 +2,10 @@ import {curry} from "panda-garden"
 import discover from "panda-sky-client"
 import Events from "./events"
 
-api = do ({client} = {}) ->
-  curry (url, source) ->
-    context = {source}
-    context.api = await do ->
-      client ?= discover url
-    context
+api = curry (initializer, source) ->
+  context = {source}
+  context.api = await initializer()
+  context
 
 events = curry (handler, context) ->
   context.events = new Events
@@ -73,7 +71,7 @@ json = (context) ->
 
 response = (context) -> context.response
 
-result = (context) -> context.json
+result = curry (key, context) -> context[key]
 
 export {api, events, source,
   resource, parameters, content, authorize,
