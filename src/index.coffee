@@ -42,13 +42,16 @@ http =
   options: flow [ (method "options"), request ]
   head: flow [ (method "head"), request ]
 
+text = tee (context) -> context.text = await context.response.text()
+
 json = tee (context) -> context.json = await context.response.json()
 
 fetch =
   mode: curry rtee (mode, context) -> context.mode = mode
-  client: curry ({fetch}, {resource, headers, method, body, mode}) ->
-    fetch resource, {method, headers, body,  mode}
-
+  client: curry ({fetch}, {resource, parameters, method, body, headers, mode}) ->
+    url = new URL resource
+    url.searchParams.append key, value for key, value of parameters
+    fetch url, {method, headers, body,  mode}
 
 sky =
   client: ({api, resource, parameters, method, body, authorization}) ->
@@ -65,4 +68,4 @@ sky =
 
 export {use, events, source,
   resource, parameters, content, headers,
-  authorize, http, json, fetch, sky}
+  authorize, http, text, json, fetch, sky}

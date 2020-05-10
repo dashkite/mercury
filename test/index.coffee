@@ -10,8 +10,8 @@ import fetch from "node-fetch"
 import {confidential} from "panda-confidential"
 
 # import {api, resource, content, http, json, result} from "../src"
-import {use, resource, content, headers,
-  http, json, fetch as mfetch, sky} from "../src"
+import {use, resource, parameters, content, headers, http,
+  text, json, fetch as mfetch, sky} from "../src"
 
 log = (context) -> console.log context ; context
 
@@ -77,19 +77,20 @@ do ->
       description: "fetch test"
       wait: false
       ->
-        API =
-          discover:
-            flow [
-              use mfetch.client {fetch}
-              resource "https://storm-api.dashkite.com"
-              headers accept: "application/json"
-              http.get
-              json
-              property "json"
-            ]
-
-        {resources} = await API.discover()
-        assert resources.room
+        search =
+          flow [
+            use mfetch.client {fetch}
+            resource "https://api.publicapis.org/entries"
+            parameters (query) -> query
+            headers accept: "application/json"
+            http.get
+            json
+            property "json"
+          ]
+        {entries} = await search
+          title: "cat"
+          category: "animals"
+        assert entries
 
     test
       description: "sky test"
