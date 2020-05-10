@@ -3,31 +3,22 @@ import assert from "assert"
 import {print, test, success} from "amen"
 import faker from "faker"
 
-import {tee, flow} from "panda-garden"
-import {titleCase} from "panda-parchment"
+import {tee, rtee, curry, flow} from "panda-garden"
+import {toUpper, titleCase, property} from "panda-parchment"
 import discover from "panda-sky-client"
 import fetch from "node-fetch"
 import {confidential} from "panda-confidential"
 
-import {api, resource, content, http, json, result} from "../src"
+# import {api, resource, content, http, json, result} from "../src"
+import {use, resource, content, headers,
+  http, json, fetch as mfetch, sky} from "../src"
+
+log = (context) -> console.log context ; context
 
 Confidential = confidential()
 {EncryptionKeyPair, SignatureKeyPair, convert, randomBytes} = Confidential
 
-initialize = do ({client} = {}) ->
-  -> client ?= discover "https://storm-api.dashkite.com", {fetch}
-
-# resource combinators
-keys = do ({keys} = {}) ->
-  tee (context) ->
-    keys ?= await do ->
-      response = await context.api.keys().get()
-      response.json()
-    context.keys = keys
-
-log = (context) -> console.log context ; context
-
-_create = ({title, blurb}) ->
+_generateRoom = ({title, blurb}) ->
   keyPairs =
     encryption: await EncryptionKeyPair.create()
     signature: await SignatureKeyPair.create()
@@ -39,18 +30,42 @@ _create = ({title, blurb}) ->
     encryption: keyPairs.encryption.publicKey.to "base64"
     signature: keyPairs.signature.publicKey.to "base64"
 
+Keys =
+
+  get:
+    flow [
+      use sky.client
+      sky.discover "https://storm-api.dashkite.com", {fetch}
+      resource "keys"
+      http.get
+      json
+      property "json"
+    ]
+
+keys = do ({keys} = {}) ->
+  tee (context) ->
+    keys ?= await Keys.get()
+    context.keys = keys
+
+Storm =
+  initialize:
+    flow [
+      use sky.client
+      sky.discover "https://storm-api.dashkite.com", {fetch}
+      keys
+    ]
+
 Room =
 
   create:
     flow [
-      _create
-      api initialize
-      keys
+      _generateRoom
+      Storm.initialize
       resource "rooms"
       content (room) -> room
       http.post
       json
-      result "json"
+      property "json"
     ]
 
 do ->
@@ -59,7 +74,25 @@ do ->
   print await test "Mercury: HTTP Combinators",  [
 
     test
-      description: "basic test"
+      description: "fetch test"
+      wait: false
+      ->
+        API =
+          discover:
+            flow [
+              use mfetch.client {fetch}
+              resource "https://storm-api.dashkite.com"
+              headers accept: "application/json"
+              http.get
+              json
+              property "json"
+            ]
+
+        {resources} = await API.discover()
+        assert resources.room
+
+    test
+      description: "sky test"
       wait: false
       ->
         {room} = await Room.create

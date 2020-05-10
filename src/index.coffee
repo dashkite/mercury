@@ -1,78 +1,68 @@
-import {curry} from "panda-garden"
+import {curry, tee, rtee, flow} from "panda-garden"
 import discover from "panda-sky-client"
 import Events from "./events"
 
-api = curry (initializer, source) ->
-  context = {source}
-  context.api = await initializer()
-  context
+use = curry (client, source) -> {client, source}
 
 events = curry (handler, context) ->
   context.events = new Events
   try
     result = handler context
-    context.events.dispath "success", result
+    context.events.dispatch "success", result
     result
   catch error
     context.events.dispatch "failure", error
+    undefined
 
 source = curry (key, source) -> source[key]
 
-resource = curry (name, context) ->
-  context.resource = name
-  context
+headers = curry rtee (headers, context) -> context.headers = headers
 
-parameters = curry (builder, context) ->
+resource = curry rtee (url, context) -> context.resource = url
+
+parameters = curry rtee (builder, context) ->
   context.parameters = builder context.source, context
-  context
 
-content = curry (builder, context) ->
+content = curry rtee (builder, context) ->
   context.body = builder context.source, context
-  context
 
-authorize = curry (builder, context) ->
+authorize = curry rtee (builder, context) ->
   context.authorization = builder context.source, context
-  context
 
-http = do ({api, resource, parameters, body, authorization} = {}) ->
-  get: (context) ->
-    {api, resource, parameters, authorization} = context
-    context.response = await api[resource](parameters)
-      .get {authorization}
-    context
+method = curry rtee (name, context) -> context.method = name
 
-  put: (context) ->
-    {api, resource, parameters, body, authorization} = context
-    context.response = await api[resource](parameters)
-      .put {body, authorization}
-    context
+request = tee (context) -> context.response = await context.client context
 
-  post: (context) ->
-    {api, resource, parameters, body, authorization} = context
-    context.response = await api[resource](parameters)
-      .post {body, authorization}
-    context
+http =
+  get: flow [ (method "get"), request ]
+  put: flow [ (method "put") request ]
+  delete: flow [ (method "delete"), request ]
+  patch: flow [ (method "patch"), request ]
+  post: flow [ (method "post"), request ]
+  options: flow [ (method "options"), request ]
+  head: flow [ (method "head"), request ]
 
-  delete: (context) ->
-    {api, resource, parameters, authorization} = context
-    context.response = await api[resource](parameters)
-      .delete {authorization}
-    context
+json = tee (context) -> context.json = await context.response.json()
 
-  patch: (context) ->
-    {api, resource, parameters, body, authorization} = context
-    context.response = await api[resource](parameters)
-      .patch {body, authorization}
-    context
+fetch =
+  mode: curry rtee (mode, context) -> context.mode = mode
+  client: curry ({fetch}, {resource, headers, method, body, mode}) ->
+    fetch resource, {method, headers, body,  mode}
 
-json = (context) ->
-  context.json = await context.response.json()
-  context
 
-response = (context) -> context.response
+sky =
+  client: ({api, resource, parameters, method, body, authorization}) ->
+    switch method
+      when "get", "options", "delete"
+        api[resource](parameters)[method] {authorization}
+      when "put", "patch", "post"
+        api[resource](parameters)[method] {authorization, body}
+  discover: do ({api} = {}) ->
+    curry rtee (url, options, context) ->
+      api ?= await discover url, options
+      context.api = api
 
-result = curry (key, context) -> context[key]
 
-export {api, events, source,
-  resource, parameters, content, authorize,
-  http, json, response, result}
+export {use, events, source,
+  resource, parameters, content, headers,
+  authorize, http, json, fetch, sky}
