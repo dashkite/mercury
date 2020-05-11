@@ -1,8 +1,10 @@
+import URLTemplate from "url-template"
 import {curry, tee, rtee, flow} from "panda-garden"
 import discover from "panda-sky-client"
 import Events from "./events"
 
-use = curry (client, source) -> {client, source}
+use = curry (client, data) ->
+  if client.run? then client.run {data} else {client, data}
 
 events = curry (handler, context) ->
   context.events = new Events
@@ -14,20 +16,31 @@ events = curry (handler, context) ->
     context.events.dispatch "failure", error
     undefined
 
-source = curry (key, source) -> source[key]
+resource = curry rtee (name, context) -> context.resource = name
 
-headers = curry rtee (headers, context) -> context.headers = headers
+base = curry rtee (url, context) -> context.base = new URL url
 
-resource = curry rtee (url, context) -> context.resource = url
+url = curry rtee (url, context) ->
+  context.url = if context.base
+    new URL url, context.base
+  else
+    new URL url
+
+data = curry rtee (builder, context) -> builder context.data
+
+query = curry rtee (builder, context) ->
+  for key, value of builder context
+    context.url.searchParams.append key, value
+
+template = curry rtee (template, context) ->
+  context.template = URLTemplate.parse template
 
 parameters = curry rtee (builder, context) ->
-  context.parameters = builder context.source, context
+  context.url = context.template.expand builder context
 
-content = curry rtee (builder, context) ->
-  context.body = builder context.source, context
+content = curry rtee (builder, context) -> context.body = builder context
 
-authorize = curry rtee (builder, context) ->
-  context.authorization = builder context.source, context
+headers = curry rtee (headers, context) -> context.headers = headers
 
 method = curry rtee (name, context) -> context.method = name
 
@@ -46,26 +59,26 @@ text = tee (context) -> context.text = await context.response.text()
 
 json = tee (context) -> context.json = await context.response.json()
 
-fetch =
-  mode: curry rtee (mode, context) -> context.mode = mode
-  client: curry ({fetch}, {resource, parameters, method, body, headers, mode}) ->
-    url = new URL resource
-    url.searchParams.append key, value for key, value of parameters
+Fetch =
+
+  client: curry ({fetch, mode},
+    {url, method, headers, body}) ->
     fetch url, {method, headers, body,  mode}
 
-sky =
-  client: ({api, resource, parameters, method, body, authorization}) ->
-    switch method
-      when "get", "options", "delete"
-        api[resource](parameters)[method] {authorization}
-      when "put", "patch", "post"
-        api[resource](parameters)[method] {authorization, body}
-  discover: do ({api} = {}) ->
-    curry rtee (url, options, context) ->
-      api ?= await discover url, options
-      context.api = api
+Sky = do ({client} = {}) ->
 
+  client = ({api, resource, parameters, method, body, authorization}) ->
+    api[resource](parameters)[method] {authorization, body}
 
-export {use, events, source,
-  resource, parameters, content, headers,
-  authorize, http, text, json, fetch, sky}
+  client: do ({api} = {}) ->
+    (url, options) ->
+      run: tee (context) ->
+        api ?= await discover url, options
+        context.api = api
+        context.client = client
+        Object.defineProperty context, "url",
+          get: -> @api[@resource](@parameters).url
+
+export {use, events, resource, base, url, data,
+  query, template, parameters, content, headers, method,
+  request, http, text, json, Fetch, Sky}

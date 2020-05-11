@@ -1,10 +1,10 @@
-import {tee, flow} from "panda-garden"
+import {identity, tee, flow} from "panda-garden"
 import {property} from "panda-parchment"
 import discover from "panda-sky-client"
 import fetch from "node-fetch"
 import {confidential} from "panda-confidential"
 
-import {use, resource, content, headers, http, json, sky} from "../src"
+import {use, resource, content, data, headers, http, json, Sky} from "../src"
 
 Confidential = confidential()
 {EncryptionKeyPair, SignatureKeyPair, convert, randomBytes} = Confidential
@@ -25,8 +25,7 @@ Keys =
 
   get:
     flow [
-      use sky.client
-      sky.discover "https://storm-api.dashkite.com", {fetch}
+      use Sky.client "https://storm-api.dashkite.com", {fetch}
       resource "keys"
       http.get
       json
@@ -41,8 +40,7 @@ keys = do ({keys} = {}) ->
 Storm =
   initialize:
     flow [
-      use sky.client
-      sky.discover "https://storm-api.dashkite.com", {fetch}
+      use Sky.client "https://storm-api.dashkite.com", {fetch}
       keys
     ]
 
@@ -53,7 +51,7 @@ Room =
       _generateRoom
       Storm.initialize
       resource "rooms"
-      content (room) -> room
+      content property "data"
       http.post
       json
       property "json"

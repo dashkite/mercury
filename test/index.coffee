@@ -6,8 +6,7 @@ import faker from "faker"
 import {flow} from "panda-garden"
 import {titleCase, property} from "panda-parchment"
 import fetch from "node-fetch"
-import {use, resource, parameters, headers, http,
-  fetch as mfetch, json} from "../src"
+import {use, url, query, headers, http, Fetch, json} from "../src"
 import Room from "./sky"
 
 log = (context) -> console.log context ; context
@@ -24,9 +23,9 @@ do ->
         PublicAPI =
           search:
             flow [
-              use mfetch.client {fetch}
-              resource "https://api.publicapis.org/entries"
-              parameters (query) -> query
+              use Fetch.client {fetch, mode: "cors"}
+              url "https://api.publicapis.org/entries"
+              query property "data"
               headers accept: "application/json"
               http.get
               json
