@@ -55,6 +55,14 @@ http =
   options: flow [ (method "options"), request ]
   head: flow [ (method "head"), request ]
 
+expect = curry rtee (codes, context) ->
+  if ! context.response.status in codes
+    throw "Mercury: unexpected response status: #{context.response.status}"
+
+ok = (context) ->
+  if !context.response.ok
+    throw "Mercury: response status is not OK: #{context.response.status}"
+
 text = tee (context) -> context.text = await context.response.text()
 
 json = tee (context) -> context.json = await context.response.json()
@@ -81,4 +89,4 @@ Sky = do ({client} = {}) ->
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, method,
-  request, http, text, json, Fetch, Sky}
+  request, http, expect, ok, text, json, Fetch, Sky}

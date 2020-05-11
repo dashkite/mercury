@@ -6,7 +6,7 @@ import faker from "faker"
 import {flow} from "panda-garden"
 import {titleCase, property} from "panda-parchment"
 import fetch from "node-fetch"
-import {use, url, query, headers, http, Fetch, json} from "../src"
+import {use, url, query, headers, http, Fetch, expect, json} from "../src"
 import Room from "./sky"
 
 log = (context) -> console.log context ; context
@@ -28,6 +28,7 @@ do ->
               query property "data"
               headers accept: "application/json"
               http.get
+              expect [ 200 ]
               json
               property "json"
             ]

@@ -119,10 +119,6 @@ TBD
 
 TBD
 
-#### expect codes
-
-TBD
-
 #### request method
 
 TBD
@@ -132,6 +128,14 @@ TBD
 TBD
 
 #### cache requestor
+
+TBD
+
+#### expect codes
+
+TBD
+
+#### ok
 
 TBD
 
@@ -156,10 +160,6 @@ TBD
 ### Sky Combinators
 
 #### client options
-
-TBD
-
-#### discover url
 
 TBD
 
