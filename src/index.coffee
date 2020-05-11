@@ -36,7 +36,8 @@ template = curry rtee (template, context) ->
   context.template = URLTemplate.parse template
 
 parameters = curry rtee (builder, context) ->
-  context.url = context.template.expand builder context
+  _url = context.template.expand builder context
+  url _url, context
 
 content = curry rtee (builder, context) -> context.body = builder context
 
@@ -67,6 +68,8 @@ text = tee (context) -> context.text = await context.response.text()
 
 json = tee (context) -> context.json = await context.response.json()
 
+blob = tee (context) -> context.blob = await context.response.blob()
+
 Fetch =
 
   client: curry ({fetch, mode},
@@ -89,4 +92,5 @@ Sky = do ({client} = {}) ->
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, method,
-  request, http, expect, ok, text, json, Fetch, Sky}
+  request, http, expect, ok, text, json, blob,
+  Fetch, Sky}
