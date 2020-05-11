@@ -32,6 +32,7 @@
   "devDependencies": {
     "amen": "^3.0.0",
     "faker": "^4.1.0",
+    "node-fetch": "^2.6.0",
     "panda-9000": "^5.0.2",
     "panda-builder": "^4.0.13",
     "panda-confidential": "^3.0.0",
@@ -39,9 +40,8 @@
     "source-map-support": "^0.5.19"
   },
   "dependencies": {
-    "@ungap/event-target": "^0.1.0",
-    "node-fetch": "^2.6.0",
+    "@ungap/event-target": "^0.2.0",
     "panda-garden": "^5.0.0",
-    "panda-sky-client": "^4.0.1"
+    "panda-sky-client": "^4.0.2"
   }
 }
