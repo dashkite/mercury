@@ -75,4 +75,20 @@ Room =
 #     ]
 
 
+# Confidential =
+#   publicKey: (context) ->
+#     context.key = PublicKey.from "base64", context.response.text()
+#
+# Keys =
+#
+#   get:
+#     flow [
+#       use Sky.client "https://storm-api.dashkite.com", {fetch}
+#       resource "public encryption key"
+#       http.get
+#       Confidential.publicKey
+#       property "key"
+#     ]
+
+
 export default Room

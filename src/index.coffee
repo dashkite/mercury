@@ -48,14 +48,15 @@ method = curry rtee (name, context) -> context.method = name
 
 request = tee (context) -> context.response = await context.client context
 
-http =
-  get: flow [ (method "get"), request ]
-  put: flow [ (method "put") request ]
-  delete: flow [ (method "delete"), request ]
-  patch: flow [ (method "patch"), request ]
-  post: flow [ (method "post"), request ]
-  options: flow [ (method "options"), request ]
-  head: flow [ (method "head"), request ]
+http = do ({http} = {}) ->
+  http = (name) -> flow [ (method name), request ]
+  get: http "get"
+  put: http "put"
+  delete: http "delete"
+  patch: http "patch"
+  post: http "post"
+  options: http "options"
+  head: http "head"
 
 expect = curry rtee (codes, context) ->
   if ! context.response.status in codes
@@ -98,11 +99,22 @@ Zinc =
     profile.receive context.keys.encryption, context.json.directory
 
   authorize: (context) ->
-    profile = await Profile.current
     {path, parameters, method} = context
-    profile.exercise {path, parameters, method}
+    profile = await Profile.current
+    if (claim = profile.exercise {path, parameters, method})?
+      context.authorization = capability: claim
+
+  authorized: do -> ({authorized} = {}) ->
+    authorized = (name) -> flow [ (method name), authorize, request ]
+    get: authorized "get"
+    put: authorized "put"
+    delete: authorized "delete"
+    patch: authorized "patch"
+    post: authorized "post"
+    options: authorized "options"
+    head: authorized "head"
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, method,
   request, http, expect, ok, text, json, blob,
-  Fetch, Sky}
+  Zinc, Fetch, Sky}
