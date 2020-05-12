@@ -54,7 +54,25 @@ Room =
       content property "data"
       http.post
       json
+      # Zinc.grants
       property "json"
     ]
+
+# TODO add test for setting room title
+
+# RoomTitle =
+#
+#   put:
+#     flow [
+#       Storm.initialize
+#       resource "title"
+#       content property "data"
+#       method "put"
+#       Zinc.authorize
+#       request
+#       json
+#       property "json"
+#     ]
+
 
 export default Room

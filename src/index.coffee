@@ -1,6 +1,7 @@
 import URLTemplate from "url-template"
 import {curry, tee, rtee, flow} from "panda-garden"
 import discover from "panda-sky-client"
+import Profile from "@dashkite/zinc"
 import Events from "./events"
 
 use = curry (client, data) ->
@@ -89,6 +90,17 @@ Sky = do ({client} = {}) ->
         context.client = client
         Object.defineProperty context, "url",
           get: -> @api[@resource](@parameters).url
+
+Zinc =
+
+  grants: (context) ->
+    profile = await Profile.current
+    profile.receive context.keys.encryption, context.json.directory
+
+  authorize: (context) ->
+    profile = await Profile.current
+    {path, parameters, method} = context
+    profile.exercise {path, parameters, method}
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, method,

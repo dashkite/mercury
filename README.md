@@ -24,7 +24,7 @@ PublicAPI =
 
 The result is an async function that we can call to make the request:
 
-```
+```coffeescript
 {entries} = await PublicAPI.search title: "cat", category: "animals"
 assert entries
 ```
