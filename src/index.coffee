@@ -4,6 +4,7 @@ import discover from "panda-sky-client"
 import Profile from "@dashkite/zinc"
 import Events from "./events"
 
+
 use = curry (client, data) ->
   if client.run? then client.run {data} else {client, data}
 
@@ -27,10 +28,10 @@ url = curry rtee (url, context) ->
   else
     new URL url
 
-data = curry rtee (builder, context) -> builder context.data
+data = curry (builder, context) -> builder context.data
 
 query = curry rtee (builder, context) ->
-  for key, value of builder context
+  for key, value of context.query
     context.url.searchParams.append key, value
 
 template = curry rtee (template, context) ->
@@ -43,6 +44,8 @@ parameters = curry rtee (builder, context) ->
 content = curry rtee (builder, context) -> context.body = builder context
 
 headers = curry rtee (headers, context) -> context.headers = headers
+
+accept = curry rtee (type, context) -> (context.headers ?= {}).accept = type
 
 method = curry rtee (name, context) -> context.method = name
 
@@ -80,8 +83,9 @@ Fetch =
 
 Sky = do ({client} = {}) ->
 
-  client = ({api, resource, parameters, method, body, authorization}) ->
-    api[resource](parameters)[method] {authorization, body}
+  client = (context) ->
+    {api, resource, parameters, method, authorization, body, headers} = context
+    api[resource](parameters)[method] {authorization, body, headers}
 
   client: do ({api} = {}) ->
     (url, options) ->
@@ -90,21 +94,38 @@ Sky = do ({client} = {}) ->
         context.api = api
         context.client = client
         Object.defineProperty context, "url",
-          get: -> @api[@resource](@parameters).url
+          get: -> new URL @api[@resource](@parameters).url
+
+  parameters: curry rtee (builder, context) ->
+    context.parameters = builder context
 
 Zinc =
 
-  grants: (context) ->
+  grants: tee (context) ->
     profile = await Profile.current
-    profile.receive context.keys.encryption, context.json.directory
+    profile.receive context.keys.api.encryption,
+      context.json.directory
 
-  authorize: (context) ->
-    {path, parameters, method} = context
+  authorize: authorize = tee (context) ->
+    {url, parameters, method} = context
+    path = url.pathname
     profile = await Profile.current
     if (claim = profile.exercise {path, parameters, method})?
       context.authorization = capability: claim
 
-  authorized: do -> ({authorized} = {}) ->
+  sigil: tee (context) ->
+    {url, method, body} = context
+    method = method.toUpperCase()
+    {sign, hash, Message} = Profile.Confidential
+    path = url.pathname
+    date = new Date().toISOString()
+    _hash = (hash Message.from "utf8", JSON.stringify body).to "base64"
+    profile = await Profile.current
+    declaration = sign profile.keyPairs.signature,
+      Message.from "utf8", JSON.stringify {method, path, date, hash: _hash}
+    context.authorization = sigil: declaration.to "base64"
+
+  authorized: do ({authorized} = {}) ->
     authorized = (name) -> flow [ (method name), authorize, request ]
     get: authorized "get"
     put: authorized "put"
@@ -115,6 +136,6 @@ Zinc =
     head: authorized "head"
 
 export {use, events, resource, base, url, data,
-  query, template, parameters, content, headers, method,
+  query, template, parameters, content, headers, accept, method,
   request, http, expect, ok, text, json, blob,
   Zinc, Fetch, Sky}

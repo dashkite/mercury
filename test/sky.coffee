@@ -2,46 +2,51 @@ import {identity, tee, flow} from "panda-garden"
 import {property} from "panda-parchment"
 import discover from "panda-sky-client"
 import fetch from "node-fetch"
-import {confidential} from "panda-confidential"
+import Profile from "@dashkite/zinc"
 
-import {use, resource, content, data, headers, http, json, Sky} from "../src"
+import {use, resource, method, query, content, data, accept, http, request,
+  expect, text, json,
+  Sky, Zinc} from "../src"
 
-Confidential = confidential()
-{EncryptionKeyPair, SignatureKeyPair, convert, randomBytes} = Confidential
+{EncryptionKeyPair, SignatureKeyPair, PublicKey,
+  convert, randomBytes} = Profile.Confidential
 
-_generateRoom = ({title, blurb}) ->
-  keyPairs =
-    encryption: await EncryptionKeyPair.create()
-    signature: await SignatureKeyPair.create()
+_generateRoom = ({title, blurb, host}) ->
+  {keyPairs} = await Profile.current
 
   title: title
   blurb: blurb
+  host: host
   address: convert from: "bytes", to: "safe-base64", await randomBytes 16
   publicKeys:
     encryption: keyPairs.encryption.publicKey.to "base64"
     signature: keyPairs.signature.publicKey.to "base64"
 
-Keys =
+Key =
 
   get:
     flow [
-      use Sky.client "https://storm-api.dashkite.com", {fetch}
-      resource "keys"
+      use Sky.client "https://http-test.dashkite.com", {fetch}
+      resource "public encryption key"
+      accept "text/plain"
       http.get
-      json
-      property "json"
+      text
+      property "text"
     ]
 
-keys = do ({keys} = {}) ->
+key = do ({key} = {}) ->
   tee (context) ->
-    keys ?= await Keys.get()
-    context.keys = keys
+    # TODO make this a combinator?
+    key ?= await Key.get()
+    context.keys ?= {}
+    context.keys.api ?= {}
+    context.keys.api.encryption = key
 
-Storm =
+HTTPTest =
   initialize:
     flow [
-      use Sky.client "https://storm-api.dashkite.com", {fetch}
-      keys
+      use Sky.client "https://http-test.dashkite.com", {fetch}
+      key
     ]
 
 Room =
@@ -49,46 +54,26 @@ Room =
   create:
     flow [
       _generateRoom
-      Storm.initialize
+      HTTPTest.initialize
       resource "rooms"
       content property "data"
-      http.post
+      method "post"
+      Zinc.sigil
+      request
       json
-      # Zinc.grants
+      Zinc.grants
       property "json"
     ]
 
-# TODO add test for setting room title
-
-# RoomTitle =
-#
-#   put:
-#     flow [
-#       Storm.initialize
-#       resource "title"
-#       content property "data"
-#       method "put"
-#       Zinc.authorize
-#       request
-#       json
-#       property "json"
-#     ]
-
-
-# Confidential =
-#   publicKey: (context) ->
-#     context.key = PublicKey.from "base64", context.response.text()
-#
-# Keys =
-#
-#   get:
-#     flow [
-#       use Sky.client "https://storm-api.dashkite.com", {fetch}
-#       resource "public encryption key"
-#       http.get
-#       Confidential.publicKey
-#       property "key"
-#     ]
-
+  Title:
+    put:
+      flow [
+        HTTPTest.initialize
+        resource "title"
+        Sky.parameters data ({address}) -> {address}
+        content data ({title}) -> {title}
+        Zinc.authorized.put
+        expect [ 204 ]
+      ]
 
 export default Room
