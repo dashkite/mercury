@@ -4,7 +4,6 @@ import discover from "panda-sky-client"
 import Profile from "@dashkite/zinc"
 import Events from "./events"
 
-
 use = curry (client, data) ->
   if client.run? then client.run {data} else {client, data}
 
