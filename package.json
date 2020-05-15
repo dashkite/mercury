@@ -1,6 +1,6 @@
 {
   "name": "@dashkite/mercury",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Combinators for HTTP requests.",
   "keywords": [
     "http",
