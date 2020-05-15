@@ -5,7 +5,7 @@ import fetch from "node-fetch"
 import Profile from "@dashkite/zinc"
 
 import {use, resource, method, query, content, data, accept, authorize,
-  cache, request, expect, text, json, add, Sky, Zinc} from "../src"
+  cache, request, expect, text, json, Sky, Zinc} from "../src"
 
 {EncryptionKeyPair, SignatureKeyPair, PublicKey,
   convert, randomBytes} = Profile.Confidential
@@ -41,7 +41,6 @@ initialize =
 
   flow [
     use Sky.client "https://http-test.dashkite.com", {fetch}
-    add "issuer public encryption key": Key.get
   ]
 
 Room =
@@ -56,7 +55,7 @@ Room =
       authorize Zinc.sigil
       request
       json
-      Zinc.grants
+      Zinc.grants Key.get
       property "json"
     ]
 
