@@ -51,6 +51,14 @@ method = curry rtee (name, context) -> context.method = name
 authorize = curry rtee (builder, context) ->
   context.authorization = await builder context
 
+cache = do (cache = {}, {method, url, cached} = {}) ->
+  curry (requestor, context) ->
+    {url, method} = context
+    if (cached = cache[url]?[method])?
+      await cached
+    else
+      (cache[url] ?= {})[method] = requestor context
+
 request = tee (context) -> context.response = await context.client context
 
 expect = curry rtee (codes, context) ->
@@ -124,5 +132,5 @@ Zinc =
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, accept, method, authorize,
-  request, expect, ok, text, json, blob,
+  cache, request, expect, ok, text, json, blob,
   Zinc, Fetch, Sky}

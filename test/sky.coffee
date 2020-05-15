@@ -5,7 +5,7 @@ import fetch from "node-fetch"
 import Profile from "@dashkite/zinc"
 
 import {use, resource, method, query, content, data, accept, authorize,
-  request, expect, text, json, Sky, Zinc} from "../src"
+  cache, request, expect, text, json, Sky, Zinc} from "../src"
 
 {EncryptionKeyPair, SignatureKeyPair, PublicKey,
   convert, randomBytes} = Profile.Confidential
@@ -30,17 +30,18 @@ Key =
       resource "public encryption key"
       method "get"
       accept "text/plain"
-      request
-      text
-      property "text"
+      cache flow [
+        request
+        text
+        property "text"
+      ]
     ]
 
 key = do ({key} = {}) ->
   tee (context) ->
-    key ?= await Key.get()
     context.keys ?= {}
     context.keys.api ?= {}
-    context.keys.api.encryption = key
+    context.keys.api.encryption = await Key.get()
 
 initialize =
 
