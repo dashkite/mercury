@@ -27,20 +27,20 @@ url = curry rtee (url, context) ->
   else
     new URL url
 
-data = curry (builder, context) -> builder context.data
+data = curry (builder, context) -> await builder context.data
 
 query = curry rtee (builder, context) ->
-  for key, value of context.query
+  for key, value of await builder context
     context.url.searchParams.append key, value
 
 template = curry rtee (template, context) ->
   context.template = URLTemplate.parse template
 
 parameters = curry rtee (builder, context) ->
-  _url = context.template.expand builder context
+  _url = context.template.expand await builder context
   url _url, context
 
-content = curry rtee (builder, context) -> context.body = builder context
+content = curry rtee (builder, context) -> context.body = await builder context
 
 headers = curry rtee (headers, context) -> context.headers = headers
 
@@ -48,17 +48,10 @@ accept = curry rtee (type, context) -> (context.headers ?= {}).accept = type
 
 method = curry rtee (name, context) -> context.method = name
 
-request = tee (context) -> context.response = await context.client context
+authorize = curry rtee (builder, context) ->
+  context.authorization = await builder context
 
-http = do ({http} = {}) ->
-  http = (name) -> flow [ (method name), request ]
-  get: http "get"
-  put: http "put"
-  delete: http "delete"
-  patch: http "patch"
-  post: http "post"
-  options: http "options"
-  head: http "head"
+request = tee (context) -> context.response = await context.client context
 
 expect = curry rtee (codes, context) ->
   if ! context.response.status in codes
@@ -76,14 +69,18 @@ blob = tee (context) -> context.blob = await context.response.blob()
 
 Fetch =
 
-  client: curry ({fetch, mode},
-    {url, method, headers, body}) ->
-    fetch url, {method, headers, body,  mode}
+  client: do ({type, credentials} = {}) ->
+    curry ({fetch, mode}, {url, method, headers, authorization, body}) ->
+      if authorization?
+        type = (Object.keys authorization)[0]
+        credentials = authorization[_type]
+        headers.authorization = "#{type} #{credentials}"
+      fetch url, {method, headers, body,  mode}
 
 Sky = do ({client} = {}) ->
 
-  client = (context) ->
-    {api, resource, parameters, method, authorization, body, headers} = context
+  client = ({api, resource, parameters,
+    method, authorization, body, headers}) ->
     api[resource](parameters)[method] {authorization, body, headers}
 
   client: do ({api} = {}) ->
@@ -96,7 +93,7 @@ Sky = do ({client} = {}) ->
           get: -> new URL @api[@resource](@parameters).url
 
   parameters: curry rtee (builder, context) ->
-    context.parameters = builder context
+    context.parameters = await builder context
 
 Zinc =
 
@@ -105,14 +102,14 @@ Zinc =
     profile.receive context.keys.api.encryption,
       context.json.directory
 
-  authorize: authorize = tee (context) ->
+  claim: (context) ->
     {url, parameters, method} = context
     path = url.pathname
     profile = await Profile.current
     if (claim = profile.exercise {path, parameters, method})?
-      context.authorization = capability: claim
+      capability: claim
 
-  sigil: tee (context) ->
+  sigil: (context) ->
     {url, method, body} = context
     method = method.toUpperCase()
     {sign, hash, Message} = Profile.Confidential
@@ -122,19 +119,10 @@ Zinc =
     profile = await Profile.current
     declaration = sign profile.keyPairs.signature,
       Message.from "utf8", JSON.stringify {method, path, date, hash: _hash}
-    context.authorization = sigil: declaration.to "base64"
+    sigil: declaration.to "base64"
 
-  authorized: do ({authorized} = {}) ->
-    authorized = (name) -> flow [ (method name), authorize, request ]
-    get: authorized "get"
-    put: authorized "put"
-    delete: authorized "delete"
-    patch: authorized "patch"
-    post: authorized "post"
-    options: authorized "options"
-    head: authorized "head"
 
 export {use, events, resource, base, url, data,
-  query, template, parameters, content, headers, accept, method,
-  request, http, expect, ok, text, json, blob,
+  query, template, parameters, content, headers, accept, method, authorize,
+  request, expect, ok, text, json, blob,
   Zinc, Fetch, Sky}

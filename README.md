@@ -31,21 +31,6 @@ assert entries
 
 Using composition means Mercury is effectively infinitely extensible. For example, Mercury comes with functions to support Panda Sky-based APIs to construct the request and check the response. 
 
-```coffeescript
-import {flow} from "panda-garden"
-import {property} from "panda-parchment"
-import {use, resource, parameters, headers, http, Sky, json} from "@dashkite/mercury"
-
-register = flow [
-  use Sky.client "https://links.dashkite.com", {fetch}
-  resource "profiles"
-  content property "data"
-  http.post
-  json
-  property "json"
-]
-```
-
 Since these are just functions, we can easily add new features. For example, we could write a simple function that adapts the `http` combinators to check the URL against an application cache.
 
 Mercury combinators compose to async functions, which means they can be reused within other compositions. For example, we might create an initialization combinator that we can reuse, to ensure a set of resources is available for subsequent requests. This is harder to do with chaining.
@@ -133,7 +118,7 @@ Check the response status against the array of codes and throw if there’s no m
 expect [ 200, 204 ]
 ```
 
-#### Ok
+#### ok
 
 Check the response status to ensure it’s within the range of success status codes (200-299).
 
@@ -173,6 +158,8 @@ query wrap q: "Little Richard"
 
 (Both `property` and `wrap` are from the Panda Garden module, but you may use any equivalent function.)
 
+Builder functions may be async.
+
 #### data builder
 
 Takes the `data` property of the request context and pass it into the given builder function. Omit this if you want to build up the result using the context directly.
@@ -192,6 +179,14 @@ Expand the template for the request with the result of applying the builder func
 #### content builder
 
 Set the content (body) for the request to the result of applying the builder function.
+
+#### authorize builder
+
+Set the `authorization` property of the request context based on the result of the builder function.
+
+```coffeescript
+authorize Zinc.claim
+```
 
 ### Events Combinators
 
@@ -230,15 +225,33 @@ Process the request using the Sky Client API. Accepts the discovery URL to use. 
 
 ### Zinc Combinators
 
-#### grant
+#### grants
 
-Coming soon.
+Similar to `json` and `text`, in that it takes grants from the response body. However, rather than add them to the context, we add the to the current Zinc profile.
 
-#### authorize
+```coffeescript
+http.post
+# we're creating a new resource
+expect [ 201 ]
+# add corresponding grants to the current profile
+Zinc.grants
+```
 
-Coming soon.
+#### claim
 
-### Confidential Combinators
+An authorization builder that returns a claim corresponding to the request context. A claim is a grant that is signed by the client that wants to use it. The signature keypair is obtained from the current Zinc profile. 
+
+**Important** ▸ The request method must already be set.
+
+#### sigil
+
+An authorization builder that returns a signed document matching the request. This is useful for implementing idempotent requests for methods that are not idempotent by definition (ex: `post`) because the server can determine that the same principal recently made an identical request). Also useful in any situation where we need to verify the identity of the requestor and have no other means to do so (ex: no claim is attached via the authorization header).
+
+```coffeescript
+authorize Zinc.sigil
+```
+
+**Important** ▸ The request method must already be set.
 
 #### encrypt
 
@@ -248,13 +261,8 @@ Coming soon.
 
 Coming soon.
 
-#### sign
-
-Coming soon.
-
 ## Roadmap
 
 - [ ] Implement `cache`.
 - [ ] Implement and test Events combinators.
 - [ ] Implement Zinc combinators. Ultimately, these belong in their own library. (Or: pass the profile in?)
-- [ ] Implement Confidential combinators. Ultimately, these belong in their own library. (Or: pass confidential instance in?)
