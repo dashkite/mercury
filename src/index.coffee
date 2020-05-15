@@ -4,6 +4,8 @@ import discover from "panda-sky-client"
 import Profile from "@dashkite/zinc"
 import Events from "./events"
 
+{sign, hash, Message} = Profile.Confidential
+
 use = curry (client, data) ->
   if client.run? then client.run {data} else {client, data}
 
@@ -103,35 +105,38 @@ Sky = do ({client} = {}) ->
   parameters: curry rtee (builder, context) ->
     context.parameters = await builder context
 
-Zinc = do ({profile, errors} = {}) ->
+Zinc = do ({errors} = {}) ->
 
   errors =
     "no profile": "Mercury: Zinc: No profile defined."
 
-  grants: curry rtee (builder, context) ->
-    profile = await Profile.current
-    throw errors["no profile"] if !profile?
-    key = await builder context
-    profile.receive key, context.json.directory
+  grants: do ({profile, key} = {}) ->
+    curry rtee (builder, context) ->
+      profile = await Profile.current
+      throw errors["no profile"] if !profile?
+      key = await builder context
+      profile.receive key, context.json.directory
 
-  claim: ({url, parameters, method}) ->
-    profile = await Profile.current
-    throw errors["no profile"] if !profile?
-    path = url.pathname
-    if (claim = profile.exercise {path, parameters, method})?
-      capability: claim
+  claim: do ({profile, path, claim} = {}) ->
+    ({url, parameters, method}) ->
+      profile = await Profile.current
+      throw errors["no profile"] if !profile?
+      path = url.pathname
+      if (claim = profile.exercise {path, parameters, method})?
+        capability: claim
 
-  sigil: ({url, method, body}) ->
-    profile = await Profile.current
-    throw errors["no profile"] if !profile?
-    method = method.toUpperCase()
-    {sign, hash, Message} = Profile.Confidential
-    path = url.pathname
-    date = new Date().toISOString()
-    _hash = (hash Message.from "utf8", JSON.stringify body).to "base64"
-    declaration = sign profile.keyPairs.signature,
-      Message.from "utf8", JSON.stringify {method, path, date, hash: _hash}
-    sigil: declaration.to "base64"
+  sigil: do ({profile, declaration} = {}) ->
+    ({url, method, body}) ->
+      profile = await Profile.current
+      throw errors["no profile"] if !profile?
+      declaration = sign profile.keyPairs.signature,
+        Message.from "utf8",
+          JSON.stringify
+            method: method.toUpperCase()
+            path: url.pathname
+            date: new Date().toISOString()
+            hash: (hash Message.from "utf8", JSON.stringify body).to "base64"
+      sigil: declaration.to "base64"
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, accept, method, authorize,
