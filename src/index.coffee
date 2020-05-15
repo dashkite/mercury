@@ -110,20 +110,20 @@ Zinc = do ({profile, errors} = {}) ->
 
   grants: curry rtee (builder, context) ->
     profile = await Profile.current
-    throw errors "no profile" if !profile?
+    throw errors["no profile"] if !profile?
     key = await builder context
     profile.receive key, context.json.directory
 
   claim: ({url, parameters, method}) ->
     profile = await Profile.current
-    throw errors "no profile" if !profile?
+    throw errors["no profile"] if !profile?
     path = url.pathname
     if (claim = profile.exercise {path, parameters, method})?
       capability: claim
 
   sigil: ({url, method, body}) ->
     profile = await Profile.current
-    throw errors "no profile" if !profile?
+    throw errors["no profile"] if !profile?
     method = method.toUpperCase()
     {sign, hash, Message} = Profile.Confidential
     path = url.pathname
