@@ -75,6 +75,10 @@ json = tee (context) -> context.json = await context.response.json()
 
 blob = tee (context) -> context.blob = await context.response.blob()
 
+add = curry rtee (description, context) ->
+  for key, value of description
+    context[key] = await value()
+
 Fetch =
 
   client: do ({type, credentials} = {}) ->
@@ -107,7 +111,7 @@ Zinc =
 
   grants: tee (context) ->
     profile = await Profile.current
-    profile.receive context.keys.api.encryption,
+    profile.receive context["issuer public encryption key"],
       context.json.directory
 
   claim: (context) ->
@@ -132,5 +136,5 @@ Zinc =
 
 export {use, events, resource, base, url, data,
   query, template, parameters, content, headers, accept, method, authorize,
-  cache, request, expect, ok, text, json, blob,
+  cache, request, expect, ok, text, json, blob, add,
   Zinc, Fetch, Sky}

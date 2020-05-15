@@ -188,6 +188,14 @@ Set the `authorization` property of the request context based on the result of t
 authorize Zinc.claim
 ```
 
+#### add builder-dictionary
+
+Set arbitrary properties for the request context using a dictionary, where the keys are the properties and the values are builder functions.
+
+```coffeescript
+add "issuer public encryption key": Key.get
+```
+
 ### Events Combinators
 
 #### events
@@ -228,6 +236,8 @@ Process the request using the Sky Client API. Accepts the discovery URL to use. 
 #### grants
 
 Similar to `json` and `text`, in that it takes grants from the response body. However, rather than add them to the context, we add the to the current Zinc profile.
+
+**Important** ▸ The `issuer public encryption key` property must be set.
 
 ```coffeescript
 http.post
