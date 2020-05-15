@@ -41,7 +41,7 @@
     "source-map-support": "^0.5.19"
   },
   "dependencies": {
-    "@dashkite/zinc": "0.0.7",
+    "@dashkite/zinc": "0.0.9",
     "@ungap/event-target": "^0.2.0",
     "panda-garden": "^5.0.0",
     "panda-sky-client": "^4.0.3"
