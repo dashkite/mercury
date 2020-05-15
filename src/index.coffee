@@ -124,6 +124,9 @@ Zinc = do ({errors} = {}) ->
       path = url.pathname
       if (claim = profile.exercise {path, parameters, method})?
         capability: claim
+      else
+        console.warn "Mercury: Zinc: claim:
+          no matching grant for [#{method} #{path}]"
 
   sigil: do ({profile, declaration} = {}) ->
     ({url, method, body}) ->
