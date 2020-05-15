@@ -103,26 +103,32 @@ Sky = do ({client} = {}) ->
   parameters: curry rtee (builder, context) ->
     context.parameters = await builder context
 
-Zinc = do ({profile} = {}) ->
+Zinc = do ({profile, errors} = {}) ->
+
+  errors =
+    "no profile": "Mercury: Zinc: No profile defined."
 
   grants: curry rtee (builder, context) ->
     profile = await Profile.current
+    throw errors "no profile" if !profile?
     key = await builder context
     profile.receive key, context.json.directory
 
   claim: ({url, parameters, method}) ->
-    path = url.pathname
     profile = await Profile.current
+    throw errors "no profile" if !profile?
+    path = url.pathname
     if (claim = profile.exercise {path, parameters, method})?
       capability: claim
 
   sigil: ({url, method, body}) ->
+    profile = await Profile.current
+    throw errors "no profile" if !profile?
     method = method.toUpperCase()
     {sign, hash, Message} = Profile.Confidential
     path = url.pathname
     date = new Date().toISOString()
     _hash = (hash Message.from "utf8", JSON.stringify body).to "base64"
-    profile = await Profile.current
     declaration = sign profile.keyPairs.signature,
       Message.from "utf8", JSON.stringify {method, path, date, hash: _hash}
     sigil: declaration.to "base64"
