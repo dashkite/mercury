@@ -110,15 +110,13 @@ Zinc = do ({profile} = {}) ->
     key = await builder context
     profile.receive key, context.json.directory
 
-  claim: (context) ->
-    {url, parameters, method} = context
+  claim: ({url, parameters, method}) ->
     path = url.pathname
     profile = await Profile.current
     if (claim = profile.exercise {path, parameters, method})?
       capability: claim
 
-  sigil: (context) ->
-    {url, method, body} = context
+  sigil: ({url, method, body}) ->
     method = method.toUpperCase()
     {sign, hash, Message} = Profile.Confidential
     path = url.pathname
