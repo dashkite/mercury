@@ -121,6 +121,7 @@ Zinc = do ({errors} = {}) ->
     ({url, parameters, method}) ->
       profile = await Profile.current
       throw errors["no profile"] if !profile?
+      # TODO consider another term for path
       path = url.pathname + url.search
       if (claim = profile.exercise {path, parameters, method})?
         capability: claim
