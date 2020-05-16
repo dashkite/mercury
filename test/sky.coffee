@@ -69,7 +69,19 @@ Room =
         content data ({title}) -> {title}
         authorize Zinc.claim
         request
-        expect [ 204 ]
+      ]
+
+  Messages:
+    get:
+      flow [
+        initialize
+        resource "messages"
+        method "get"
+        Sky.parameters property "data"
+        authorize Zinc.claim
+        request
+        json
+        property "json"
       ]
 
 export default Room

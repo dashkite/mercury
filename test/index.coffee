@@ -60,4 +60,10 @@ do ->
           title: titleCase faker.lorem.words()
           address: room.address
 
+        messages = await Room.Messages.get
+          address: room.address
+          after: (new Date).toISOString()
+
+        assert Array.isArray messages
+
   ]
