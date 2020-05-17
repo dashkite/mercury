@@ -2,22 +2,15 @@ import "source-map-support/register"
 import assert from "assert"
 import {print, test, success} from "amen"
 
-import "fake-indexeddb/auto"
-import faker from "faker"
 import {flow} from "panda-garden"
-import {titleCase, property} from "panda-parchment"
+import {property} from "panda-parchment"
 import fetch from "node-fetch"
-import Profile from "@dashkite/zinc"
 import {use, url, method, query, headers,
   request, Fetch, expect, json} from "../src"
-import "./custom-event"
-import "./local-storage"
-import Room from "./sky"
+
+global.fetch = fetch
 
 do ->
-
-  Profile.current = await Profile.create
-    nickname: faker.internet.userName()
 
   print await test "Mercury: HTTP Combinators",  [
 
@@ -28,13 +21,13 @@ do ->
         PublicAPI =
           search:
             flow [
-              use Fetch.client {fetch, mode: "cors"}
+              use Fetch.client mode: "cors"
               url "https://api.publicapis.org/entries"
               query property "data"
               method "get"
               headers accept: "application/json"
               request
-              expect [ 200 ]
+              expect.status [ 200 ]
               json
               property "json"
             ]
@@ -47,23 +40,6 @@ do ->
       # ensure we didn't tacitly redfine an combinators
       assert method.call?
 
-    test
-      description: "zinc test"
-      wait: false
-      ->
-        {room} = await Room.create
-          title: titleCase faker.lorem.words()
-          blurb: faker.lorem.sentence()
-        assert room.created
-
-        await Room.Title.put
-          title: titleCase faker.lorem.words()
-          address: room.address
-
-        messages = await Room.Messages.get
-          address: room.address
-          after: (new Date).toISOString()
-
-        assert Array.isArray messages
-
   ]
+
+  process.exit if success then 0 else 1
