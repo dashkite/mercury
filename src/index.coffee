@@ -69,7 +69,6 @@ expect =
 
   ok: tee (context) ->
     if ! context.response.ok
-      console.log context
       throw failure "not ok", context
 
 text = tee (context) -> context.text = await context.response.text()
