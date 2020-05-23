@@ -62,7 +62,6 @@ do ->
         catch error
           assert.equal true, error.context?
 
-
   ]
 
   process.exit if success then 0 else 1
