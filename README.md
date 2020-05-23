@@ -196,3 +196,30 @@ Process the request context using the Fetch API. Options:
 use Fetch.client mode: "cors"
 ```
 
+### Errors
+
+When a Mercury combinator throws an exception, the error will contain the request context as the `context` property. If there’s a response, it will also contain `response` and `status` properties. If the request does not yet have a corresponding response, these will be undefined. Unexpected errors (ex: attempting to use a malformed URL) will not include the request context.
+
+#### error.context
+
+Contains the request context at the point the exception was thrown.
+
+#### error.response
+
+Convenience for:
+
+```coffeescript
+error.context && error.context.response
+```
+
+Undefined if request does not have a corresponding response.
+
+#### error.status
+
+Convenience for:
+
+```coffeescript
+error.response && error.response.status
+```
+
+Undefined if request does not have a corresponding response.
