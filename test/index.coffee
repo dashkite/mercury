@@ -61,6 +61,7 @@ do ->
           assert.fail "Call to FubarAPI should throw"
         catch error
           assert.equal true, error.context?
+          assert.equal 404, error.status
 
   ]
 

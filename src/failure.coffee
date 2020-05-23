@@ -15,6 +15,7 @@ failure = do ({codes, message} = {}) ->
     message = codes[code] context
     error = new Error "Mercury: #{message}"
     error.context = context
+    error.status = context.response?.status
     error
 
 
