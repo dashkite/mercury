@@ -1,6 +1,6 @@
 import URLTemplate from "url-template"
 import {curry, tee, rtee, flow} from "panda-garden"
-import {isString} from "panda-parchment"
+import {toUpper, isString} from "panda-parchment"
 import failure from "./failure"
 
 use = curry (client, data) ->
@@ -40,7 +40,7 @@ media = curry rtee (value, context) ->
   if value?
     (context.headers ?= {})["content-type"] = value
 
-method = curry rtee (value, context) -> context.method = value
+method = curry rtee (value, context) -> context.method = toUpper value
 
 authorize = curry rtee (value, context) ->
   (context.headers ?= {}).authorization = value
