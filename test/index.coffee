@@ -56,13 +56,9 @@ do ->
       description: "context available in error"
       wait: false
       ->
-        try
-          await FubarAPI.fubar()
-          assert.fail "Call to FubarAPI should throw"
-        catch error
-          assert.equal true, error.context?
-          assert.equal true, error.response?
-          assert.equal 404, error.status
+        assert.rejects (-> FubarAPI.fubar()),
+          (error) ->
+            error.context? && error.response? && error.status == 404
 
   ]
 
