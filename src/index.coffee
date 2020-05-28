@@ -1,6 +1,6 @@
 import URLTemplate from "url-template"
 import {curry, tee, rtee, flow} from "panda-garden"
-import {toUpper, isString} from "panda-parchment"
+import {toUpper as toUpperCase, isString} from "panda-parchment"
 import failure from "./failure"
 
 use = curry (client, data) ->
@@ -40,7 +40,7 @@ media = curry rtee (value, context) ->
   if value?
     (context.headers ?= {})["content-type"] = value
 
-method = curry rtee (value, context) -> context.method = toUpper value
+method = curry rtee (value, context) -> context.method = value
 
 authorize = curry rtee (value, context) ->
   (context.headers ?= {}).authorization = value
@@ -83,7 +83,7 @@ Fetch =
 
   client: do ({type, credentials} = {}) ->
     curry ({mode}, {url, method, headers, body}) ->
-      fetch url, {method, headers, body,  mode}
+      fetch url, {method: (toUpperCase method), headers, body,  mode}
 
 export {use, url, base, path,
   query, template, parameters, content, headers,
