@@ -1,7 +1,10 @@
 import URLTemplate from "url-template"
 import {curry, tee, rtee, flow} from "panda-garden"
-import {toUpper as toUpperCase, isString} from "panda-parchment"
+import {stack, push, pop, poke} from "@dashkite/katana"
 import failure from "./failure"
+
+toUpperCase = (s) -> s.toUpperCase()
+isString = (s) -> s.constructor == String
 
 use = curry (client, data) ->
   if client.run? then client.run {data} else {client, data}
@@ -45,6 +48,15 @@ method = curry rtee (value, context) -> context.method = value
 authorize = curry rtee (value, context) ->
   (context.headers ?= {}).authorization = value
 
+data = curry (name, context) -> context.data[name]
+
+from = ([source, filters..., target]) ->
+  tee stack flow [
+    push source
+    (poke filter for filter in filters)...
+    pop target
+  ]
+
 cache = do (cache = {}, {method, url, cached} = {}) ->
   curry (requestor, context) ->
     {url, method} = context
@@ -77,8 +89,6 @@ json = tee (context) -> context.json = await context.response.json()
 
 blob = tee (context) -> context.blob = await context.response.blob()
 
-data = curry (builder, context) -> await builder context.data
-
 Fetch =
 
   client: do ({type, credentials} = {}) ->
@@ -87,5 +97,5 @@ Fetch =
 
 export {use, url, base, path,
   query, template, parameters, content, headers,
-  accept, media, method, authorize, cache, request, expect,
-  text, json, blob, data, Fetch}
+  accept, media, method, data, from, authorize, cache, request, expect,
+  text, json, blob, Fetch}

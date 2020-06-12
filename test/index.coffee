@@ -5,7 +5,7 @@ import {print, test, success} from "amen"
 import {flow} from "panda-garden"
 import {property} from "panda-parchment"
 import fetch from "node-fetch"
-import {use, url, method, query, headers,
+import {use, url, method, query, headers, from, data,
   request, Fetch, expect, json} from "../src"
 
 global.fetch = fetch
@@ -34,7 +34,6 @@ FubarAPI =
       expect.ok
     ]
 
-
 do ->
 
   print await test "Mercury: HTTP Combinators",  [
@@ -53,12 +52,25 @@ do ->
       assert method.call?
 
     test
+      description: "from with data",
+      wait: false
+      ->
+        f = flow [
+          use Fetch.client mode: "cors"
+          from [
+            data "url"
+            url
+          ]
+        ]
+        context = await f url: "http://example.com/"
+        assert.equal "http://example.com/", context.url.href
+
+    test
       description: "context available in error"
       wait: false
       ->
         assert.rejects (-> FubarAPI.fubar()),
-          (error) ->
-            error.context? && error.response? && error.status == 404
+          (error) -> error.context? && error.response? && error.status == 404
 
   ]
 
