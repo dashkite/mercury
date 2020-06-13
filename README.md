@@ -177,12 +177,15 @@ Waits for the response body as text and adds it to the request context as the pr
 
 Waits for the response body as binary data and adds it to the request context as the property `blob`.
 
-#### data builder
+#### data keys
 
-Takes the `data` property of the request context and pass it into the given builder function. Omit this if you want to build up the result using the context directly. Useful in combination with the `property` combinator, from the [Panda Garden](https://github.com/pandastrike/panda-garden) module, and the `cast` combinator from the [Dashkite Katana](https://github.com/dashkite/katana) module.
+Takes the `data` property of the request context and extracts the given keys into an object.
 
 ```coffeescript
-cast query, [ data property "description" ]
+from [
+  data [ "title", "author", "content" ]
+  content
+]
 ```
 
 #### Fetch.client options
