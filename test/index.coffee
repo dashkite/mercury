@@ -58,7 +58,7 @@ do ->
         f = flow [
           use Fetch.client mode: "cors"
           from [
-            data "url"
+            data ["url"]
             property "url"
             url
           ]

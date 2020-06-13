@@ -48,7 +48,8 @@ method = curry rtee (value, context) -> context.method = value
 authorize = curry rtee (value, context) ->
   (context.headers ?= {}).authorization = value
 
-data = curry (name, context) -> [name]: context.data[name]
+data = curry (names, context) ->
+  names.reduce ((r, name) -> {r..., [name]: context.data[name]}), {}
 
 from = ([source, filters..., target]) ->
   tee stack flow [
