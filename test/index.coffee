@@ -59,6 +59,7 @@ do ->
           use Fetch.client mode: "cors"
           from [
             data "url"
+            property "url"
             url
           ]
         ]
