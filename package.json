@@ -30,6 +30,7 @@
     "test": "p9k test"
   },
   "devDependencies": {
+    "@dashkite/mercury-zinc": "file:../mercury-zinc",
     "amen": "^3.0.0",
     "node-fetch": "^2.6.0",
     "panda-9000": "^5.0.3",

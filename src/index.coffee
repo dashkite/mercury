@@ -72,7 +72,7 @@ expect =
 
   status: curry rtee (codes, context) ->
     if codes?
-      if ! context.response.status in codes
+      if ! (context.response.status in codes)
         throw failure "unexpected status", context
 
   media:  curry rtee (value, context) ->

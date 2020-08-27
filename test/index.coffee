@@ -24,6 +24,19 @@ PublicAPI =
       property "json"
     ]
 
+  fail:
+    flow [
+      use Fetch.client mode: "cors"
+      url "https://api.publicapis.org/entries"
+      query property "data"
+      method "get"
+      headers accept: "application/json"
+      request
+      expect.status [ 300 ]
+      json
+      property "json"
+    ]
+
 FubarAPI =
   fubar:
     flow [
@@ -50,6 +63,15 @@ do ->
 
       # ensure we didn't tacitly redefine any combinators
       assert method.call?
+
+    test
+      description: "failing fetch test"
+      wait: false
+      ->
+        assert.rejects ->
+          {entries} = await PublicAPI.fail
+            title: "cat"
+            category: "animals"
 
     test
       description: "from with data",
