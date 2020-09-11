@@ -18,29 +18,40 @@
     "url": "git+https://github.com/dashkite/mercury.git"
   },
   "license": "SEE LICENSE IN LICENSE.md",
-  "author": "Dan Yoder",
+  "contributors": [
+    {
+      "name": "Dan Yoder",
+      "email": "dan@pandastrike.com"
+    },
+    {
+      "name": "David Harper",
+      "email": "david@pandastrike.com"
+    }
+  ],
   "main": "build/npm/src/index.js",
+  "main:coffee": "src/index.coffee",
+  "files": [
+    "src",
+    "build/npm/src"
+  ],
   "directories": {
     "test": "test"
   },
-  "files": [
-    "build/npm/src"
-  ],
   "scripts": {
     "test": "p9k test"
   },
+  "dependencies": {
+    "@dashkite/katana": "^0.3.2",
+    "@pandastrike/garden": "^8.0.1",
+    "url-template": "^2.0.8"
+  },
   "devDependencies": {
-    "@dashkite/mercury-zinc": "file:../mercury-zinc",
+    "@dashkite/mercury-zinc": "^0.1.1",
     "amen": "^3.0.0",
     "node-fetch": "^2.6.0",
     "panda-9000": "^5.0.3",
     "panda-builder": "^4.0.13",
     "panda-parchment": "^6.0.3",
     "source-map-support": "^0.5.19"
-  },
-  "dependencies": {
-    "@dashkite/katana": "0.0.9",
-    "panda-garden": "^5.0.0",
-    "url-template": "^2.0.8"
   }
 }
