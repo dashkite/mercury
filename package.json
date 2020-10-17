@@ -41,9 +41,9 @@
     "test": "p9k test"
   },
   "dependencies": {
-    "@dashkite/katana": "^0.3.2",
-    "@pandastrike/garden": "^8.0.1",
-    "url-template": "^2.0.8"
+    "@dashkite/katana": "0.3.2",
+    "@pandastrike/garden": "8.0.1",
+    "url-template": "2.0.8"
   },
   "devDependencies": {
     "@dashkite/mercury-zinc": "^0.1.1",

@@ -1,5 +1,5 @@
 import URLTemplate from "url-template"
-import {curry, tee, rtee, flow} from "panda-garden"
+import {curry, tee, rtee, flow} from "@pandastrike/garden"
 import {stack, push, pop, poke} from "@dashkite/katana"
 import failure from "./failure"
 
