@@ -33,6 +33,17 @@ content = curry rtee (value, context) ->
   #      this may also affect other combinators like Zinc.sigil
   context.body = if isString value then value else JSON.stringify value
 
+urlencoded = curry rtee (value, context) ->
+  string = ""
+  for pair, i in (Object.entries value)
+    if i == 0
+      string += "#{encodeURIComponent pair[0]}=#{encodeURIComponent pair[1]}"
+    else
+      string += "&#{encodeURIComponent pair[0]}=#{encodeURIComponent pair[1]}"
+
+  context.body = string
+  (context.headers ?= {})["content-type"] = "application/x-www-form-urlencoded"
+
 headers = curry rtee (object, context) -> context.headers = object
 
 accept = curry rtee (value, context) ->
@@ -97,6 +108,6 @@ Fetch =
       fetch url, {method: (toUpperCase method), headers, body,  mode}
 
 export {use, url, base, path,
-  query, template, parameters, content, headers,
+  query, template, parameters, content, urlencoded, headers,
   accept, media, method, data, from, authorize, cache, request, expect,
   text, json, blob, Fetch}
