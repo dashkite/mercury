@@ -1,113 +1,158 @@
 import URLTemplate from "url-template"
-import {curry, tee, rtee, flow} from "@pandastrike/garden"
-import {stack, push, pop, poke} from "@dashkite/katana"
+import * as _ from "@dashkite/joy"
+import * as k from "@dashkite/katana"
 import failure from "./failure"
 
-toUpperCase = (s) -> s.toUpperCase()
-isString = (s) -> s.constructor == String
-
-use = curry (client, data) ->
-  if client.run? then client.run {data} else {client, data}
-
-url = curry rtee (value, context) -> context.url = new URL value
-
-base = curry rtee (value, context) -> context.base = value
-
-path = curry rtee (value, context) ->
-  context.path = value
-  context.url = new URL value, context.base
-
-query = curry rtee (object, context) ->
-  for key, value of object
-    context.url.searchParams.append key, value
-
-template = curry rtee (value, context) ->
-  context.template = URLTemplate.parse value
-
-parameters = curry rtee (object, context) ->
-  context.parameters = object
-  path (context.template.expand object), context
-
-content = curry rtee (value, context) ->
-  # TODO support streams and other content types
-  #      this may also affect other combinators like Zinc.sigil
-  context.body = if isString value then value else JSON.stringify value
-
-urlencoded = curry rtee (value, context) ->
-  string = ""
-  for pair, i in (Object.entries value)
-    if i == 0
-      string += "#{encodeURIComponent pair[0]}=#{encodeURIComponent pair[1]}"
-    else
-      string += "&#{encodeURIComponent pair[0]}=#{encodeURIComponent pair[1]}"
-
-  context.body = string
-  (context.headers ?= {})["content-type"] = "application/x-www-form-urlencoded"
-
-headers = curry rtee (object, context) -> context.headers = object
-
-accept = curry rtee (value, context) ->
-  if value?
-    (context.headers ?= {}).accept = value
-
-media = curry rtee (value, context) ->
-  if value?
-    (context.headers ?= {})["content-type"] = value
-
-method = curry rtee (value, context) -> context.method = value
-
-authorize = curry rtee (value, context) ->
-  (context.headers ?= {}).authorization = value
-
-data = curry (names, context) ->
-  names.reduce ((r, name) -> {r..., [name]: context.data[name]}), {}
-
-from = ([source, filters..., target]) ->
-  tee stack flow [
-    push source
-    (poke filter for filter in filters)...
-    pop target
+read = (name, f) ->
+  _.flow [
+    k.read name
+    f
+    k.discard
   ]
 
-cache = do (cache = {}, {method, url, cached} = {}) ->
-  curry (requestor, context) ->
-    {url, method} = context
-    if (cached = cache[url]?[method])?
-      await cached
-    else
-      (cache[url] ?= {})[method] = requestor context
+write = (name, f) ->
+  _.flow [
+    f
+    k.write name
+    k.discard
+  ]
 
-request = tee (context) -> context.response = await context.client context
+set = (name, f) -> write name, k.push f
+
+push = (f) ->
+  (value) ->
+    if value?
+      _.flow [
+        k.push -> value
+        f
+        k.discard
+      ]
+    else
+      f
+
+start = (data) ->
+  if data?
+    [ data, { data } ]
+  else
+    [ { data } ]
+
+url = push set "url", (value) -> new URL value
+
+base = push set "base", _.identity
+
+path = push _.pipe [
+  set "path", _.identity
+  read "base", set "url", (value, base) -> new URL value, base
+]
+
+query = push read "url",
+  k.speek (url, parameters) ->
+    for key, value of parameters
+      url.searchParams.append key, value
+
+template = push set "template", (value) -> URLTemplate.parse value
+
+parameters = push _.pipe [
+  set "parameters", _.identity
+  read "template", set "path", (template, value) -> template.expand value
+]
+
+method = push set "method", _.toUpperCase
+
+mode = push set "mode", _.identity
+
+# TODO support streams and other content types
+#      this may also affect other combinators like Zinc.sigil
+content = push set "body", (value) ->
+  if _.isString value then value else JSON.stringify value
+
+headers = push read "headers",
+  set "headers", (headers, value) ->
+    _.assign (headers ?= {}), value
+
+_header = (name) ->
+  push _.pipe [
+    k.spoke (value) -> [name]: value
+    headers
+  ]
+
+accept = _header "accept"
+
+media = _header "content-type"
+
+authorize = _header "authorization"
+
+encode = (object) ->
+  _.pairs object
+  .map ([key, value]) ->
+    "#{encodeURIComponent key}=#{encodeURIComponent value}"
+  .join "&"
+
+urlencoded = push _.pipe [
+  set "body", encode
+  media "application/x-www-form-urlencoded"
+]
+
+cache = push set "cache", (name) -> CacheStorage.open name
+
+verify = (f) ->
+  read "verify", set "verify", (verify) ->
+    if verify? then _.pipe [ verify, f ] else f
 
 expect =
 
-  status: curry rtee (codes, context) ->
-    if codes?
-      if ! (context.response.status in codes)
-        throw failure "unexpected status", context
+  status: (codes) ->
+    verify (response) ->
+      if ! (response.status in codes)
+        throw failure "unexpected status", response
 
-  media:  curry rtee (value, context) ->
-    if value?
+  media:  (value) ->
+    verify (response) ->
       if ! ((context.response.headers.get "content-type") == value)
-        throw failure "unsupported media type", context
+        throw failure "unsupported media type", response
 
-  ok: tee (context) ->
-    if ! context.response.ok
-      throw failure "not ok", context
+  ok: verify (response) ->
+    if ! response.ok then throw failure "not ok", response
 
-text = tee (context) -> context.text = await context.response.text()
+request = ([stack..., context]) ->
+  {url, method, headers, body, mode} = context
+  request = new Request context.url, {url, method, headers, body, mode}
+  context.response = await do ->
+    if context.cache? && (response = await context.cache.match request)?
+      response
+    else
+      fetch request
+  context.verify? context.response
+  [ stack..., context ]
 
-json = tee (context) -> context.json = await context.response.json()
 
-blob = tee (context) -> context.blob = await context.response.blob()
+text = read "response", set "text", (response) -> response.text()
+json = read "response", set "json", (response) -> response.json()
+blob = read "response", set "blob", (response) -> response.blob()
 
-Fetch =
+get = (name) -> ([stack..., context]) -> context[name]
 
-  client: do ({type, credentials} = {}) ->
-    curry ({mode}, {url, method, headers, body}) ->
-      fetch url, {method: (toUpperCase method), headers, body,  mode}
-
-export {use, url, base, path,
-  query, template, parameters, content, urlencoded, headers,
-  accept, media, method, data, from, authorize, cache, request, expect,
-  text, json, blob, Fetch}
+export {
+  start
+  url
+  base
+  path
+  query
+  template
+  parameters
+  content
+  urlencoded
+  headers
+  accept
+  media
+  method
+  mode
+  authorize
+  cache
+  request
+  expect,
+  text
+  json
+  blob
+  get
+}
