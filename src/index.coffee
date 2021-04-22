@@ -8,7 +8,7 @@ import failure from "./failure"
 #      when defining the graph. if we get a value, we use
 #      that to parameterize the fn
 setter = (f) ->
-  (value) -> if value? then _.pipe [ (ks.push -> value), f ] else f
+  (value) -> if value? then (ks.copy _.pipe [ (ks.push -> value), f ]) else f
 
 request = (graph) ->
   _.pipe [
@@ -19,8 +19,9 @@ request = (graph) ->
     # create the request...
     ks.copy _.pipe [
       ks.push ({url, method, headers, body, mode}) ->
-        new Request context.url, {url, method, headers, body, mode}
+        new Request url, {method, headers, body, mode}
       ks.write "request"
+    ]
     # now we can actually process the request
     k.copy _.flow [
       # check the cache, if one was specified
@@ -30,12 +31,13 @@ request = (graph) ->
           response
         else
           fetch request
-        # save the response
-        k.write "response"
-        # verify the response if any verifiers were installed
-        k.read "verify"
-        k.peek (verify, response) -> verify? response
-      ]
+      # save the response
+      k.write "response"
+      # verify the response if any verifiers were installed
+      k.read "verify"
+      k.peek (verify, response) -> verify? response
+      # TODO cache the response if there's a cache defined
+      # https://developer.mozilla.org/en-US/docs/Web/API/Cache/put
     ]
   ]
 
@@ -115,8 +117,8 @@ urlencoded = setter _.pipe [
   media "application/x-www-form-urlencoded"
 ]
 
-cache = setter _.pipe [
-  ks.push (name) -> CacheStorage.open name
+cache = setter ks.copy _.pipe [
+  ks.push (name) -> caches.open name
   ks.write "cache"
 ]
 

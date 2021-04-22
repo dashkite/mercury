@@ -9,12 +9,20 @@ import * as k from "@dashkite/katana"
 globalThis.fetch ?= fetch
 global.Request ?= fetch.Request
 
+trace = (name, f) ->
+  (args...) ->
+    console.log name, "called with", args
+    r = _.apply f, args
+    console.log name, "returned", r
+    r
+
+
 PublicAPI =
   search:
     _.flow [
       $.request [
         $.url "https://api.publicapis.org/entries"
-        $.query
+        $.query()
         $.method "get"
         $.headers accept: "application/json"
         $.expect.status [ 200 ]
@@ -62,6 +70,7 @@ do ->
         {entries} = await PublicAPI.search
           title: "cat"
           category: "animals"
+        console.log entries
         assert entries
 
 
