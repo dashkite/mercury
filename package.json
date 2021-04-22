@@ -44,10 +44,10 @@
     "@dashkite/genie": "^0.1.0",
     "@dashkite/joy": "^0.1.0",
     "@dashkite/katana": "file:../katana",
-    "@dashkite/masonry": "file:../masonry",
     "url-template": "2.0.8"
   },
   "devDependencies": {
+    "@dashkite/masonry": "^0.7.1",
     "@dashkite/mercury-zinc": "^0.1.3",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",

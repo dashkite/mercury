@@ -1,103 +1,131 @@
 import URLTemplate from "url-template"
 import * as _ from "@dashkite/joy"
-import * as k from "@dashkite/katana"
+import * as ks from "@dashkite/katana/sync"
+import * as k from "@dashkite/katana/async"
 import failure from "./failure"
 
-read = (name, f) ->
-  _.flow [
-    k.read name
-    f
-    k.discard
-  ]
+# TODO if we get a stack, we know no argument was passed in
+#      when defining the graph. if we get a value, we use
+#      that to parameterize the fn
+setter = (f) ->
+  (value) -> if value? then _.pipe [ (ks.push -> value), f ] else f
 
-write = (name, f) ->
-  _.flow [
-    f
-    k.write name
-    k.discard
-  ]
-
-set = (name, f) -> write name, k.push f
-
-push = (f) ->
-  (value) ->
-    if value?
-      _.flow [
-        k.push -> value
-        f
-        k.discard
+request = (graph) ->
+  _.pipe [
+    # set up the stack
+    (data) -> [ { data, mode: "cors" } ]
+    # run the graph, pushing the arguments onto the stack for convenience
+    ks.copy _.pipe [ (ks.read "data"), graph... ]
+    # create the request...
+    ks.copy _.pipe [
+      ks.push ({url, method, headers, body, mode}) ->
+        new Request context.url, {url, method, headers, body, mode}
+      ks.write "request"
+    # now we can actually process the request
+    k.copy _.flow [
+      # check the cache, if one was specified
+      # otherwise, fetch the request
+      k.push ({request, cache}) ->
+        if cache? && (response = await cache.match request)?
+          response
+        else
+          fetch request
+        # save the response
+        k.write "response"
+        # verify the response if any verifiers were installed
+        k.read "verify"
+        k.peek (verify, response) -> verify? response
       ]
-    else
-      f
+    ]
+  ]
 
-start = (data) ->
-  if data?
-    [ data, { data } ]
-  else
-    [ { data } ]
-
-url = push set "url", (value) -> new URL value
-
-base = push set "base", _.identity
-
-path = push _.pipe [
-  set "path", _.identity
-  read "base", set "url", (value, base) -> new URL value, base
+url = setter ks.copy _.pipe [
+  ks.push (value) -> new URL value
+  ks.write "url"
 ]
 
-query = push read "url",
-  k.speek (url, parameters) ->
+base = setter ks.write "base"
+
+path = setter ks.copy _.pipe [
+  ks.read "base"
+  ks.push (base, value) -> new URL value, base
+  ks.write "url"
+]
+
+query = setter _.pipe [
+  ks.read "url"
+  ks.peek (url, parameters) ->
     for key, value of parameters
       url.searchParams.append key, value
-
-template = push set "template", (value) -> URLTemplate.parse value
-
-parameters = push _.pipe [
-  set "parameters", _.identity
-  read "template", set "path", (template, value) -> template.expand value
 ]
 
-method = push set "method", _.toUpperCase
+template = setter ks.copy _.pipe [
+  ks.push (value) -> URLTemplate.parse value
+  ks.write "template"
+]
 
-mode = push set "mode", _.identity
+parameters = setter ks.copy _.pipe [
+  ks.write "parameters"
+  ks.read "template"
+  ks.push (template, parameters) -> template.expand parameters
+  ks.write "path"
+]
+
+method = setter ks.copy _.pipe [
+  ks.push _.toUpperCase
+  ks.write "method"
+]
+
+mode = setter ks.write "mode"
 
 # TODO support streams and other content types
 #      this may also affect other combinators like Zinc.sigil
-content = push set "body", (value) ->
-  if _.isString value then value else JSON.stringify value
+content = setter ks.copy _.pipe [
+  ks.push (value) -> if _.isString value then value else JSON.stringify value
+  ks.write "body"
+]
 
-headers = push read "headers",
-  set "headers", (headers, value) ->
-    _.assign (headers ?= {}), value
+headers = setter ks.copy _.pipe [
+  ks.read "headers"
+  ks.push (headers, value) -> _.assign (headers ?= {}), value
+  ks.write "headers"
+]
 
-_header = (name) ->
-  push _.pipe [
-    k.spoke (value) -> [name]: value
+header = (name) ->
+  setter _.pipe [
+    ks.poke (value) -> [name]: value
     headers
   ]
 
-accept = _header "accept"
+accept = header "accept"
 
-media = _header "content-type"
+media = header "content-type"
 
-authorize = _header "authorization"
+authorize = header "authorization"
 
-encode = (object) ->
+urlencode = (object) ->
   _.pairs object
   .map ([key, value]) ->
     "#{encodeURIComponent key}=#{encodeURIComponent value}"
   .join "&"
 
-urlencoded = push _.pipe [
-  set "body", encode
+urlencoded = setter _.pipe [
+  ks.poke urlencode
+  ks.write "body"
   media "application/x-www-form-urlencoded"
 ]
 
-cache = push set "cache", (name) -> CacheStorage.open name
+cache = setter _.pipe [
+  ks.push (name) -> CacheStorage.open name
+  ks.write "cache"
+]
 
 verify = (f) ->
-  read "verify", set "verify", (verify) ->
-    if verify? then _.pipe [ verify, f ] else f
+  ks.copy _.pipe [
+    ks.read "verify"
+    ks.push (verify) -> if verify? then _.pipe [ verify, f ] else f
+    ks.write "verify"
+  ]
 
 expect =
 
@@ -114,26 +142,34 @@ expect =
   ok: verify (response) ->
     if ! response.ok then throw failure "not ok", response
 
-request = ([stack..., context]) ->
-  {url, method, headers, body, mode} = context
-  request = new Request context.url, {url, method, headers, body, mode}
-  context.response = await do ->
-    if context.cache? && (response = await context.cache.match request)?
-      response
-    else
-      fetch request
-  context.verify? context.response
-  [ stack..., context ]
+response = (graph) ->
+  _.flow [
+    # process the response
+    k.copy _.flow graph
+    # return the context
+    _.first
+  ]
 
+text = k.copy _.flow [
+  k.read "response"
+  k.push (response) -> response.text()
+  k.write "text"
+]
 
-text = read "response", set "text", (response) -> response.text()
-json = read "response", set "json", (response) -> response.json()
-blob = read "response", set "blob", (response) -> response.blob()
+json = k.copy _.flow [
+  k.read "response"
+  k.push (response) -> response.json()
+  k.write "json"
+]
 
-get = (name) -> ([stack..., context]) -> context[name]
+blob = k.copy _.flow [
+  k.read "response"
+  k.push (response) -> response.blob()
+  k.write "blob"
+]
 
 export {
-  start
+  request
   url
   base
   path
@@ -149,10 +185,9 @@ export {
   mode
   authorize
   cache
-  request
-  expect,
+  expect
+  response
   text
   json
   blob
-  get
 }
