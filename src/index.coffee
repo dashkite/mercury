@@ -5,19 +5,16 @@ import { Daisho } from "@dashkite/katana"
 import * as ks from "@dashkite/katana/sync"
 import failure from "./failure"
 
-# TODO if we get a daisho, we know no argument was passed in
-#      when defining the graph. if we get a value, we use
-#      that to parameterize the fn
 setter = (f) ->
   (value) ->
     if k.isDaisho value
       f value
     else
-      ks.copy _.pipe [ (ks.push -> value), f ]
+      ks.assign _.pipe [ (ks.push -> value), f ]
 
 
 # create the request...
-createRequest = ks.copy _.pipe [
+createRequest = ks.assign _.pipe [
   ks.context
   ks.push ({url, method, headers, body, mode}) ->
     new Request url, {method, headers, body, mode}
@@ -27,7 +24,7 @@ createRequest = ks.copy _.pipe [
 # actually process the request
 # check the cache, if one was specified
 # otherwise, fetch the request
-processRequest = k.copy _.flow [
+processRequest = k.assign _.flow [
   ks.context
   k.push ({request, cache}) ->
     if cache? && (response = await cache.match request)?
@@ -58,7 +55,7 @@ request = (graph) ->
     # set up the stack
     (data) -> Daisho.create [], { data, mode: "cors" }
     # run the graph, pushing the arguments onto the stack for convenience
-    ks.copy _.pipe [ (ks.read "data"), graph... ]
+    ks.assign _.pipe [ (ks.read "data"), graph... ]
     createRequest
     _.flow [
       processRequest
@@ -67,14 +64,14 @@ request = (graph) ->
     ]
   ]
 
-url = setter ks.copy _.pipe [
+url = setter ks.assign _.pipe [
   ks.push (value) -> new URL value
   ks.write "url"
 ]
 
 base = setter ks.write "base"
 
-path = setter ks.copy _.pipe [
+path = setter ks.assign _.pipe [
   ks.read "base"
   ks.push (base, value) -> new URL value, base
   ks.write "url"
@@ -87,19 +84,19 @@ query = setter _.pipe [
       url.searchParams.append key, value
 ]
 
-template = setter ks.copy _.pipe [
+template = setter ks.assign _.pipe [
   ks.push (value) -> URLTemplate.parse value
   ks.write "template"
 ]
 
-parameters = setter ks.copy _.pipe [
+parameters = setter ks.assign _.pipe [
   ks.write "parameters"
   ks.read "template"
   ks.push (template, parameters) -> template.expand parameters
   ks.write "path"
 ]
 
-method = setter ks.copy _.pipe [
+method = setter ks.assign _.pipe [
   ks.push _.toUpperCase
   ks.write "method"
 ]
@@ -108,7 +105,7 @@ mode = setter ks.write "mode"
 
 # TODO support streams and other content types
 #      this may also affect other combinators like Zinc.sigil
-content = setter ks.copy _.pipe [
+content = setter ks.assign _.pipe [
   ks.push (value) ->
     if _.isString value
       value
@@ -119,7 +116,7 @@ content = setter ks.copy _.pipe [
   ks.write "body"
 ]
 
-headers = setter ks.copy _.pipe [
+headers = setter ks.assign _.pipe [
   ks.read "headers"
   ks.push (headers, value) -> _.assign (headers ?= {}), value
   ks.write "headers"
@@ -143,7 +140,7 @@ urlencoded = setter _.pipe [
   media "application/x-www-form-urlencoded"
 ]
 
-cache = setter ks.copy _.pipe [
+cache = setter ks.assign _.pipe [
   ks.push (name) -> caches.open name
   ks.write "cache"
 ]
@@ -151,7 +148,7 @@ cache = setter ks.copy _.pipe [
 expires = setter ks.write "expires"
 
 verify = (f) ->
-  ks.copy _.pipe [
+  ks.assign _.pipe [
     ks.read "verify"
     ks.push (verify) -> if verify? then _.pipe [ verify, f ] else f
     ks.write "verify"
@@ -175,26 +172,25 @@ expect =
 response = (graph) ->
   _.flow [
     # process the response
-    k.copy _.flow graph
+    k.assign _.flow graph
     # return the context
     k.context
-    # seems like there should be a more official way to do this
-    _.get "_context"
+    k.get
   ]
 
-text = k.copy _.flow [
+text = k.assign _.flow [
   k.read "response"
   k.push (response) -> response.text()
   k.write "text"
 ]
 
-json = k.copy _.flow [
+json = k.assign _.flow [
   k.read "response"
   k.push (response) -> response.json()
   k.write "json"
 ]
 
-blob = k.copy _.flow [
+blob = k.assign _.flow [
   k.read "response"
   k.push (response) -> response.blob()
   k.write "blob"

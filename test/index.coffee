@@ -61,8 +61,9 @@ do ->
         {entries} = await PublicAPI.search
           title: "cat"
           category: "animals"
-        console.log entries
-        assert entries
+        assert.equal true, _.isArray entries
+        assert.equal true, entries.length > 0
+        assert.equal true, entries[0].API?
 
 
     test
@@ -83,7 +84,8 @@ do ->
             $.mode "cors"
             $.url
           ]
-          _.get "_context"
+          k.context
+          k.get
           _.get "url"
         ]
         url = await f "http://example.com/"
