@@ -1,43 +1,69 @@
 import URLTemplate from "url-template"
 import * as _ from "@dashkite/joy"
+import * as k from "@dashkite/katana"
+import { Daisho } from "@dashkite/katana"
 import * as ks from "@dashkite/katana/sync"
-import * as k from "@dashkite/katana/async"
 import failure from "./failure"
 
-# TODO if we get a stack, we know no argument was passed in
+# TODO if we get a daisho, we know no argument was passed in
 #      when defining the graph. if we get a value, we use
 #      that to parameterize the fn
 setter = (f) ->
-  (value) -> if value? then (ks.copy _.pipe [ (ks.push -> value), f ]) else f
+  (value) ->
+    if k.isDaisho value
+      f value
+    else
+      ks.copy _.pipe [ (ks.push -> value), f ]
+
+
+# create the request...
+createRequest = ks.copy _.pipe [
+  ks.context
+  ks.push ({url, method, headers, body, mode}) ->
+    new Request url, {method, headers, body, mode}
+  ks.write "request"
+]
+
+# actually process the request
+# check the cache, if one was specified
+# otherwise, fetch the request
+processRequest = k.copy _.flow [
+  ks.context
+  k.push ({request, cache}) ->
+    if cache? && (response = await cache.match request)?
+      response
+    else
+      fetch request
+  # save the response
+  k.write "response"
+]
+
+# verify the response if any verifiers were installed
+verifyResponse = _.flow [
+  k.context
+  k.peek ({verify, response}) -> verify? response
+]
+
+cacheResponse = _.flow [
+  k.context
+  k.peek ({cache, expires, request, response}) ->
+    if cache?
+      cache.put request, response.clone()
+      if expires?
+        setTimeout (-> cache.delete request), expires
+]
 
 request = (graph) ->
   _.pipe [
     # set up the stack
-    (data) -> [ { data, mode: "cors" } ]
+    (data) -> Daisho.create [], { data, mode: "cors" }
     # run the graph, pushing the arguments onto the stack for convenience
     ks.copy _.pipe [ (ks.read "data"), graph... ]
-    # create the request...
-    ks.copy _.pipe [
-      ks.push ({url, method, headers, body, mode}) ->
-        new Request url, {method, headers, body, mode}
-      ks.write "request"
-    ]
-    # now we can actually process the request
-    k.copy _.flow [
-      # check the cache, if one was specified
-      # otherwise, fetch the request
-      k.push ({request, cache}) ->
-        if cache? && (response = await cache.match request)?
-          response
-        else
-          fetch request
-      # save the response
-      k.write "response"
-      # verify the response if any verifiers were installed
-      k.read "verify"
-      k.peek (verify, response) -> verify? response
-      # TODO cache the response if there's a cache defined
-      # https://developer.mozilla.org/en-US/docs/Web/API/Cache/put
+    createRequest
+    _.flow [
+      processRequest
+      verifyResponse
+      cacheResponse
     ]
   ]
 
@@ -83,7 +109,13 @@ mode = setter ks.write "mode"
 # TODO support streams and other content types
 #      this may also affect other combinators like Zinc.sigil
 content = setter ks.copy _.pipe [
-  ks.push (value) -> if _.isString value then value else JSON.stringify value
+  ks.push (value) ->
+    if _.isString value
+      value
+    else if (_.isObject value) || (_.isArray value)
+      JSON.stringify value
+    else
+      value.toString?()
   ks.write "body"
 ]
 
@@ -105,14 +137,8 @@ media = header "content-type"
 
 authorize = header "authorization"
 
-urlencode = (object) ->
-  _.pairs object
-  .map ([key, value]) ->
-    "#{encodeURIComponent key}=#{encodeURIComponent value}"
-  .join "&"
-
 urlencoded = setter _.pipe [
-  ks.poke urlencode
+  ks.poke (dictionary) -> (new URLSearchParams _.pairs dictionary).toString()
   ks.write "body"
   media "application/x-www-form-urlencoded"
 ]
@@ -121,6 +147,8 @@ cache = setter ks.copy _.pipe [
   ks.push (name) -> caches.open name
   ks.write "cache"
 ]
+
+expires = setter ks.write "expires"
 
 verify = (f) ->
   ks.copy _.pipe [
@@ -149,7 +177,9 @@ response = (graph) ->
     # process the response
     k.copy _.flow graph
     # return the context
-    _.first
+    k.context
+    # seems like there should be a more official way to do this
+    _.get "_context"
   ]
 
 text = k.copy _.flow [
