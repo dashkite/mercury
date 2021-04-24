@@ -30,28 +30,36 @@
   ],
   "main": "build/npm/src/index.js",
   "main:coffee": "src/index.coffee",
-  "files": [
-    "src",
-    "build/npm/src"
-  ],
-  "directories": {
-    "test": "test"
+  "exports": {
+    ".": {
+      "import": "./build/import/src/index.js",
+      "node": "./build/node/src/index.js"
+    },
+    "./*": {
+      "import": "./build/import/src/*.js",
+      "node": "./build/node/src/*.js"
+    }
   },
+  "files": [
+    "build/import/src",
+    "build/node/src",
+    "src"
+  ],
   "scripts": {
-    "test": "p9k test"
+    "test": "genie test"
   },
   "dependencies": {
-    "@dashkite/genie": "^0.1.0",
-    "@dashkite/joy": "^0.1.0",
-    "@dashkite/katana": "file:../katana",
+    "@dashkite/joy": "^0.1.1",
+    "@dashkite/katana": "^0.4.2",
     "url-template": "2.0.8"
   },
   "devDependencies": {
+    "@dashkite/genie": "^0.1.0",
     "@dashkite/masonry": "^0.7.1",
-    "@dashkite/mercury-zinc": "^0.1.3",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",
     "node-fetch": "^2.6.1",
+    "panda-quill": "^5.0.0",
     "source-map-support": "^0.5.19"
   }
 }

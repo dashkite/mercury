@@ -4,23 +4,21 @@ _Combinators for making HTTP requests._
 Mercury works a lot like SuperAgent, except via function composition instead of chaining.
 
 ```coffeescript
-import {flow} from "panda-garden"
-import {property} from "panda-parchment"
-import {cast} from "@dashkite/katana"
-import {use, Fetch, url, query, accept, request, json} from "@dashkite/mercury"
+import * as _ from "@dashkite/joy"
+import * as m from "@dashkite/mercury"
 
 PublicAPI =
   search:
-    flow [
-      use Fetch.client {mode: "cors"}
-      url "https://api.publicapis.org/entries"
-      cast query, [ property "data" ]
-      accept "application/json"
-      request
-      expect.status [ 200 ]
-      expect.media "application/json"
-      json
-      property "json"
+    _.flow [
+      m.request [
+        m.url "https://api.publicapis.org/entries"
+        m.query
+        m.method "get"
+        m.headers accept: "application/json"
+        m.expect.status [ 200 ]
+      ]
+      m.response [ $.json ]
+      _.get "json"
     ]
 ```
 
@@ -32,7 +30,7 @@ The result is an async function that we can call to make the request:
   category: "animals"
 ```
 
-Using composition means Mercury is effectively infinitely extensible. For example, [Mercury Sky](https://github.com/dashkite/mercury-sky) comes with functions to support Panda Sky-based APIs to construct the request and check the response.
+Using composition means Mercury is trivially extensible. For example, [Mercury Sky](https://github.com/dashkite/mercury-sky) comes with functions to support Panda Sky-based APIs to construct the request and check the response.
 
 Since these are just functions, we can easily add new features. For example, we could write a simple function that adapts the `http` combinators to check the URL against an application cache.
 
@@ -44,168 +42,79 @@ Mercury combinators compose to async functions, which means they can be reused w
 npm i @dashkite/mercury
 ```
 
-Use with your favorite bundler.
+Use with your favorite bundler or import directly in the browser.
 
 ## API
 
-### Context Specification
+Mercury provides two top-level combinators:
 
-| Property   | Description                                                  |
+- `request`, which takes an array of combinators to specify the request
+- `response`, which takes an array of combinators for processing the response
+
+Both combinators take a [daisho][] datastructure that may be manipulated using [Katana][] operators.
+
+The `response` combinator returns a promise for an object describing the request and response.
+
+[daisho]: https://github.com/dashkite/katana#daisho-data-structure
+[Katana]: https://github.com/dashkite/katana
+
+### Request Combinators
+
+Request combinators may take an argument or implicitly read from the daisho stack.
+
+| Combinator    | Arguments             | Description                                                  |
+| ------------- | --------------------- | ------------------------------------------------------------ |
+| base          | URL                   | The base URL, used in conjunction with `path` to construct the full URL. |
+| path          | URL path              | The path of the URL, relative to the base URL.               |
+| template      | URL template          | The [URL template](https://tools.ietf.org/html/rfc6570) to be expanded to generate the URL. |
+| parameters    | object                | The parameters to use to expand the URL template. Not be confused with `query`. |
+| url           | URL                   | The ultimate URL of the request.                             |
+| query         | object                | The search parameters to be appended to the URL.             |
+| method        | text                  | The method name (ex: GET, PUT, …) for the request. Will be converted to uppercase for you. |
+| content       | any                   | The content body of the request. Takes a string or a value, which will be converted into a string using its `toString` method, except for arrays and objects, which are converted into JSON. |
+| urlencoded    | object                | The content body, formatted as a URL encoded form.           |
+| headers       | object                | The headers of the request.                                  |
+| accept        | text                  | The accept header.                                           |
+| media         | text                  | The content-type header.                                     |
+| authorize     | text                  | The authorization header.                                    |
+| cache         | text                  | The named CacheStorage object to use in processing the request. |
+| expires       | number (milliseconds) | The expiration for cached responses.                         |
+| expect.ok     | -                     | Expect an OK response (200 range).                           |
+| expect.status | array                 | The status codes to expect (that will not throw).            |
+| expect.media  | text                  | The content-type of the response. Use with accept.           |
+
+### Response Combinators
+
+| Combinator | Description                                                  |
 | ---------- | ------------------------------------------------------------ |
-| base       | The base URL, used in conjunction with `path` to construct the full URL. |
-| path       | The path of the URL, relative to the base URL.               |
-| template   | The [URL template](https://tools.ietf.org/html/rfc6570) to be expanded to generate the URL. |
-| parameters | The parameters to use to expand the URL template. Not be confused with `query`. |
-| url        | The ultimate URL of the request.                             |
-| query      | The search parameters to be appended to the URL.             |
-| method     | The method name (ex: GET, PUT, …) for the request.           |
-| body       | The content body of the request.                             |
-| headers    | The headers of the request.                                  |
-| response   | The response to the request.                                 |
 | json       | The result of parsing the response body as JSON.             |
 | text       | The response body as plain text.                             |
 | blob       | The response body as [raw data](https://developer.mozilla.org/en-US/docs/Web/API/Blob). |
 
 Combinators from outside of Mercury may use additional properties.
 
-### Combinators
+### Use Outside The Browser
 
-#### use client
-
-Set the client to use for evaluating requests.
+When using Mercury in Node, you will need to install Fetch and Request globally.
 
 ```coffeescript
-use Fetch.client {fetch, mode: "cors"}
+import fetch from "node-fetch"
+
+globalThis.fetch ?= fetch
+global.Request ?= fetch.Request
+
 ```
 
-#### resource type
-
-Set the resource type.
+If you want to use the `cache` combinator, you will also need to install `caches` globally:
 
 ```coffeescript
-resource "blog"
-```
-
-#### base text
-
-Set the base URL for the request.
-
-#### path text
-
-Sets the path for the request. This tacitly sets the URL by resolving the path relative to the base.
-
-#### url text
-
-Set the request URL.
-
-#### template text
-
-Set the URL template for generating the URL.
-
-#### parameters object
-
-Expand the template with the given object. Tacitly sets the URL to the resulting expansion.
-
-#### query object
-
-Set the query (search parameters) for the URL.
-
-#### method name
-
-Set the method name for the request, ex: “get”.
-
-#### content value
-
-Set the content (body) of the request to the given value. If the value is not a string, it’s converted to a string using `JSON.stringify`.
-
-#### headers object
-
-Set the headers for the request.
-
-#### accept type
-
-Set the `accept` header for the request and verify it against the `content-type` of the response.
-
-#### media type
-
-Set the `content-type` for the request.
-
-#### authorize value
-
-Set the `authorization` header to the given value.
-
-#### request
-
-Send the request based on the current request context and await the result, adding it to the context as the `response` property.
-
-#### cache requestor
-
-Maintain a local in-memory cache which is checked before sending the request. The cache is based on the request URL and method, so these need to have already been set.
-
-#### expect.status codes
-
-Check the response status against the array of codes and throw if there’s no match.
-
-```coffeescript
-expect.status [ 200, 204 ]
-```
-
-#### expect.ok
-
-Check the response status to ensure it’s within the range of success status codes (200-299).
-
-#### expect.media value
-
-Check the response content type to ensure it matches the given value. (This should correspond to the accept value.)
-
-#### json
-
-Waits for the response body and parses it as JSON, adding the result to the request context as the property `json`.
-
-```coffeescript
-# grab the JSON body
-json
-# return the JSON result
-property "json"
-```
-
-#### text
-
-Waits for the response body as text and adds it to the request context as the property `text`.
-
-#### blob
-
-Waits for the response body as binary data and adds it to the request context as the property `blob`.
-
-#### data keys
-
-Takes the `data` property of the request context and extracts the given keys into an object.
-
-```coffeescript
-from [
-  data [ "title", "author", "content" ]
-  content
-]
-```
-
-#### Fetch.client options
-
-Process the request context using the Fetch API. Options:
-
-- `fetch`: (optional) the Fetch implementation function to use
-- `mode`: (optional) set the `mode` option for the Fetch client
-
-```coffeescript
-use Fetch.client mode: "cors"
+import { caches } from 'cache-polyfill'
+globalThis.caches ?= caches
 ```
 
 ### Errors
 
-When a Mercury combinator throws an exception, the error will contain the request context as the `context` property. If there’s a response, it will also contain `response` and `status` properties. If the request does not yet have a corresponding response, these will be undefined. Unexpected errors (ex: attempting to use a malformed URL) will not include the request context.
-
-#### error.context
-
-Contains the request context at the point the exception was thrown.
+When a Mercury combinator throws an exception, the error will contain additional information, if applicable. If there’s a response, it will contain `response` and `status` properties. If the request does not yet have a corresponding response, these will be undefined.
 
 #### error.response
 
