@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@dashkite/joy": "^0.1.1",
-    "@dashkite/katana": "^0.4.2",
+    "@dashkite/katana": "^0.4.3",
     "url-template": "2.0.8"
   },
   "devDependencies": {

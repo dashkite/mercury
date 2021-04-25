@@ -12,7 +12,6 @@ setter = (f) ->
     else
       ks.assign _.pipe [ (ks.push -> value), f ]
 
-
 # create the request...
 createRequest = ks.assign _.pipe [
   ks.context
@@ -51,17 +50,15 @@ cacheResponse = _.flow [
 ]
 
 request = (graph) ->
-  _.pipe [
+  _.flow [
     # set up the stack
-    (data) -> Daisho.create [], { data, mode: "cors" }
-    # run the graph, pushing the arguments onto the stack for convenience
-    ks.assign _.pipe [ (ks.read "data"), graph... ]
+    (data) -> Daisho.create [ data ], { data, mode: "cors" }
+    # run the graph
+    k.assign graph
     createRequest
-    _.flow [
-      processRequest
-      verifyResponse
-      cacheResponse
-    ]
+    processRequest
+    verifyResponse
+    cacheResponse
   ]
 
 url = setter ks.assign _.pipe [
@@ -172,7 +169,7 @@ expect =
 response = (graph) ->
   _.flow [
     # process the response
-    k.assign _.flow graph
+    k.assign graph
     # return the context
     k.context
     k.get
