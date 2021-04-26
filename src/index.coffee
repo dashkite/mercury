@@ -5,6 +5,10 @@ import { Daisho } from "@dashkite/katana"
 import * as ks from "@dashkite/katana/sync"
 import failure from "./failure"
 
+# TODO implement this with parse
+accept = (expected, actual) ->
+  (_.toLowerCase actual).includes (_.toLowerCase expected)
+
 setter = (f) ->
   (value) ->
     if k.isDaisho value
@@ -144,27 +148,37 @@ cache = setter ks.assign _.pipe [
 
 expires = setter ks.write "expires"
 
-verify = (f) ->
-  ks.assign _.pipe [
-    ks.read "verify"
-    ks.push (verify) -> if verify? then _.pipe [ verify, f ] else f
-    ks.write "verify"
-  ]
+verify = ks.assign _.pipe [
+  ks.read "verify"
+  ks.push (verify, f) -> if verify? then _.pipe [ verify, f ] else f
+  ks.write "verify"
+]
 
 expect =
 
-  status: (codes) ->
-    verify (response) ->
-      if ! (response.status in codes)
-        throw failure "unexpected status", response
+  status: setter _.pipe [
+    ks.poke (codes) ->
+      (response) ->
+        if ! (response.status in codes)
+          throw failure "unexpected status", response
+    verify
+  ]
 
-  media:  (value) ->
-    verify (response) ->
-      if ! ((context.response.headers.get "content-type") == value)
-        throw failure "unsupported media type", response
+  media: ks.assign _.pipe [
+    ks.read "headers"
+    ks.poke _.get "accept"
+    ks.push (accept) ->
+      (response) ->
+        if !(acceptable accept, response.headers.get "content-type")?
+          throw failure "unsupported media type", response
+    verify
+  ]
 
-  ok: verify (response) ->
-    if ! response.ok then throw failure "not ok", response
+  ok: ks.assign _.pipe [
+    ks.push ->
+      (response) -> if ! response.ok then throw failure "not ok", response
+    verify
+  ]
 
 response = (graph) ->
   _.flow [
