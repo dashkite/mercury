@@ -28,7 +28,7 @@
       "email": "david@pandastrike.com"
     }
   ],
-  "main": "build/npm/src/index.js",
+  "main": "build/node/src/index.js",
   "main:coffee": "src/index.coffee",
   "exports": {
     ".": {
@@ -49,8 +49,8 @@
     "test": "genie test"
   },
   "dependencies": {
-    "@dashkite/joy": "^0.1.5",
-    "@dashkite/katana": "^0.4.3",
+    "@dashkite/joy": "^0.1.7",
+    "@dashkite/katana": "^0.4.5",
     "url-template": "2.0.8"
   },
   "devDependencies": {

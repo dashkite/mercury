@@ -1,18 +1,17 @@
 import URLTemplate from "url-template"
 import * as _ from "@dashkite/joy"
 import * as k from "@dashkite/katana"
-import { Daisho } from "@dashkite/katana"
 import * as ks from "@dashkite/katana/sync"
 import failure from "./failure"
 
 # TODO implement this with parse
-accept = (expected, actual) ->
+acceptable = (expected, actual) ->
   (_.toLowerCase actual).includes (_.toLowerCase expected)
 
 setter = (f) ->
   (value) ->
     if k.isDaisho value
-      f value
+      ((ks.test _.isDefined, f) value)
     else
       ks.assign _.pipe [ (ks.push -> value), f ]
 
@@ -41,7 +40,10 @@ processRequest = k.assign _.flow [
 # verify the response if any verifiers were installed
 verifyResponse = _.flow [
   k.context
-  k.peek ({verify, response}) -> verify? response
+  k.peek ({verify, response}) ->
+    if verify
+      verifier = _.all verify
+      verifier response
 ]
 
 cacheResponse = _.flow [
@@ -56,7 +58,7 @@ cacheResponse = _.flow [
 request = (graph) ->
   _.flow [
     # set up the stack
-    (data) -> Daisho.create [ data ], { data, mode: "cors" }
+    (data) -> k.Daisho.create [ data ], { data, mode: "cors" }
     # run the graph
     k.assign graph
     createRequest
@@ -94,7 +96,8 @@ parameters = setter ks.assign _.pipe [
   ks.write "parameters"
   ks.read "template"
   ks.push (template, parameters) -> template.expand parameters
-  ks.write "path"
+  path
+
 ]
 
 method = setter ks.assign _.pipe [
@@ -150,7 +153,8 @@ expires = setter ks.write "expires"
 
 verify = ks.assign _.pipe [
   ks.read "verify"
-  ks.push (verify, f) -> if verify? then _.pipe [ verify, f ] else f
+  ks.push (verify, f) ->
+    _.push (verify ? []), f
   ks.write "verify"
 ]
 
