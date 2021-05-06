@@ -53,6 +53,7 @@ cacheResponse = _.flow [
       cache.put request, response.clone()
       if expires?
         setTimeout (-> cache.delete request), expires
+  k.discard
 ]
 
 request = (graph) ->
@@ -187,27 +188,26 @@ expect =
 response = (graph) ->
   _.flow [
     # process the response
-    k.assign graph
-    # return the context
-    k.context
+    graph...
+    # return the top of the stack
     k.get
   ]
 
-text = k.assign _.flow [
+text = _.flow [
   k.read "response"
-  k.push (response) -> response.text()
+  k.poke (response) -> response.text()
   k.write "text"
 ]
 
-json = k.assign _.flow [
+json = _.flow [
   k.read "response"
-  k.push (response) -> response.json()
+  k.poke (response) -> response.json()
   k.write "json"
 ]
 
-blob = k.assign _.flow [
+blob = _.flow [
   k.read "response"
-  k.push (response) -> response.blob()
+  k.poke (response) -> response.blob()
   k.write "blob"
 ]
 

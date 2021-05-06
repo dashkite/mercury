@@ -20,7 +20,6 @@ PublicAPI =
         $.expect.status [ 200 ]
       ]
       $.response [ $.json ]
-      _.get "json"
     ]
 
   fail:
@@ -34,7 +33,6 @@ PublicAPI =
         $.expect.status [ 300 ]
       ]
       $.response [ $.json ]
-      _.get "json"
     ]
 
 FubarAPI =

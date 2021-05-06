@@ -3,7 +3,7 @@ _Combinators for making HTTP requests._
 
 Mercury works a lot like SuperAgent, except via function composition instead of chaining.
 
-```coffeescript
+```coffee
 import * as _ from "@dashkite/joy"
 import * as m from "@dashkite/mercury"
 
