@@ -49,14 +49,15 @@
     "test": "genie test"
   },
   "dependencies": {
-    "@dashkite/genie-presets": "^0.0.3",
-    "@dashkite/joy": "^0.1.7",
-    "@dashkite/katana": "file:../katana",
+    "@dashkite/joy": "^0.3.0",
+    "@dashkite/katana": "^0.4.6",
     "url-template": "2.0.8"
   },
   "devDependencies": {
-    "@dashkite/genie": "^0.1.0",
-    "@dashkite/masonry": "^0.7.1",
+    "@babel/core": "^7.14.3",
+    "@dashkite/genie": "file:../genie",
+    "@dashkite/genie-presets": "file:../genie-presets",
+    "@dashkite/masonry": "^0.10.2",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",
     "node-fetch": "^2.6.1",
