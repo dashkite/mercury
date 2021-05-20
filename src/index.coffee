@@ -102,7 +102,7 @@ parameters = setter ks.assign _.pipe [
 ]
 
 method = setter ks.assign _.pipe [
-  ks.push _.toUpperCase
+  ks.push  _.toUpperCase
   ks.write "method"
 ]
 
@@ -185,14 +185,6 @@ expect =
     verify
   ]
 
-response = (graph) ->
-  _.flow [
-    # process the response
-    graph...
-    # return the top of the stack
-    k.get
-  ]
-
 text = _.flow [
   k.read "response"
   k.poke (response) -> response.text()
@@ -229,7 +221,6 @@ export {
   authorize
   cache
   expect
-  response
   text
   json
   blob

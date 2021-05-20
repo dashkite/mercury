@@ -19,7 +19,8 @@ PublicAPI =
         $.headers accept: "application/json"
         $.expect.status [ 200 ]
       ]
-      $.response [ $.json ]
+      $.json
+      k.get
     ]
 
   fail:
@@ -32,7 +33,8 @@ PublicAPI =
         $.headers accept: "application/json"
         $.expect.status [ 300 ]
       ]
-      $.response [ $.json ]
+      $.json
+      k.get
     ]
 
 FubarAPI =
@@ -44,7 +46,8 @@ FubarAPI =
         $.method "get"
         $.expect.ok
       ]
-      $.response [ $.json ]
+      $.json
+      k.get
     ]
 
 do ->
