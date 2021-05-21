@@ -56,7 +56,7 @@
   "devDependencies": {
     "@babel/core": "^7.14.3",
     "@dashkite/genie": "^0.3.3",
-    "@dashkite/genie-presets": "^0.1.4",
+    "@dashkite/genie-presets": "^0.1.5",
     "@dashkite/masonry": "^0.10.3",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",
