@@ -49,7 +49,7 @@
     "test": "genie test"
   },
   "dependencies": {
-    "@dashkite/joy": "^0.3.2",
+    "@dashkite/joy": "^0.3.3",
     "@dashkite/katana": "^0.4.6",
     "url-template": "2.0.8"
   },
