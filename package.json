@@ -30,11 +30,14 @@
   ],
   "exports": {
     ".": {
-      "browser": "./build/browser/src/index.js"
+      "browser": "./build/browser/src/index.js",
+      "node": "./build/node/src/index.js"
     }
   },
+  "main": "build/node/src/index.js",
   "files": [
-    "build/browser/src"
+    "build/browser/src",
+    "build/node/src"
   ],
   "scripts": {
     "test": "genie test"
