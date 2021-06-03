@@ -28,22 +28,13 @@
       "email": "david@pandastrike.com"
     }
   ],
-  "main": "build/node/src/index.js",
-  "main:coffee": "src/index.coffee",
   "exports": {
     ".": {
-      "import": "./build/import/src/index.js",
-      "node": "./build/node/src/index.js"
-    },
-    "./*": {
-      "import": "./build/import/src/*.js",
-      "node": "./build/node/src/*.js"
+      "browser": "./build/browser/src/index.js"
     }
   },
   "files": [
-    "build/import/src",
-    "build/node/src",
-    "src"
+    "build/browser/src"
   ],
   "scripts": {
     "test": "genie test"

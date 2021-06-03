@@ -1,8 +1,44 @@
 presets:
-  coffeescript:
-    targets:
-      - import
-      - node
   verify: null
   update: null
   release: null
+  esm: null
+  coffeescript:
+    targets:
+      browser:
+        - preset: browser
+          glob:
+            - src/**/*.coffee
+        - preset: browser
+          glob:
+            - test/client/**/*.coffee
+          options:
+            mode: debug
+        - preset: node
+          glob:
+            - test/**/*.coffee
+            - '!test/client/**/*.coffee'
+        - preset: browser
+          glob:
+            - src/**/*.coffee
+        - preset: browser
+          glob:
+            - test/client/**/*.coffee
+          options:
+            mode: debug
+        - preset: node
+          glob:
+            - test/**/*.coffee
+            - '!test/client/**/*.coffee'
+        - preset: browser
+          glob:
+            - src/**/*.coffee
+        - preset: browser
+          glob:
+            - test/client/**/*.coffee
+          options:
+            mode: debug
+        - preset: node
+          glob:
+            - test/**/*.coffee
+            - '!test/client/**/*.coffee'
