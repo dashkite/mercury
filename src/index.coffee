@@ -1,4 +1,4 @@
-import URLTemplate from "url-template"
+import URLTemplate from "es6-url-template"
 import * as _ from "@dashkite/joy"
 import * as k from "@dashkite/katana"
 import * as ks from "@dashkite/katana/sync"
