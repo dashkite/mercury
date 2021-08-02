@@ -89,7 +89,7 @@ query = setter _.pipe [
 ]
 
 template = setter ks.assign _.pipe [
-  ks.push (value) -> URLTemplate.parse value
+  ks.push (value) -> new URLTemplate value
   ks.write "template"
 ]
 
