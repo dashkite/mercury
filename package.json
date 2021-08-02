@@ -43,15 +43,15 @@
     "test": "genie test"
   },
   "dependencies": {
-    "@dashkite/joy": "^0.3.9",
+    "@dashkite/joy": "^0.3.11",
     "@dashkite/katana": "^0.4.8",
     "es6-url-template": "^3.0.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.14.3",
-    "@dashkite/genie": "^0.5.2",
-    "@dashkite/genie-presets": "^0.2.5",
-    "@dashkite/masonry": "^0.11.5",
+    "@babel/core": "^7.14.8",
+    "@dashkite/genie": "^0.5.4",
+    "@dashkite/genie-presets": "^0.4.10",
+    "@dashkite/masonry": "^0.11.9",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",
     "node-fetch": "^2.6.1",
