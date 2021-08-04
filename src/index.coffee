@@ -56,17 +56,20 @@ cacheResponse = _.flow [
   k.discard
 ]
 
-request = (graph) ->
+start = (graph) ->
   _.flow [
     # set up the stack
     (data) -> k.Daisho.create [ data ], { data, mode: "cors" }
     # run the graph
-    k.assign graph
-    createRequest
-    processRequest
-    verifyResponse
-    cacheResponse
+    _.flow graph
   ]
+
+request = _.flow [
+  createRequest
+  processRequest
+  verifyResponse
+  cacheResponse
+]
 
 url = setter ks.assign _.pipe [
   ks.push (value) -> new URL value
@@ -204,6 +207,7 @@ blob = _.flow [
 ]
 
 export {
+  start
   request
   url
   base

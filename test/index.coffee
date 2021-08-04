@@ -1,5 +1,6 @@
-import assert from "assert"
-import {print, test, success} from "amen"
+import assert from "@dashkite/assert"
+import { test, success } from "@dashkite/amen"
+import print from "@dashkite/amen-console"
 
 import * as _ from "@dashkite/joy"
 import fetch from "node-fetch"
@@ -9,43 +10,28 @@ import * as k from "@dashkite/katana"
 globalThis.fetch ?= fetch
 global.Request ?= fetch.Request
 
-PublicAPI =
-  search:
-    _.flow [
-      $.request [
-        $.url "https://api.publicapis.org/entries"
-        $.query
-        $.method "get"
-        $.headers accept: "application/json"
-        $.expect.status [ 200 ]
-      ]
+HTTPBin =
+
+  get:
+    $.start [
+      $.url "https://httpbin.org/get"
+      $.query
+      $.method "get"
+      $.headers accept: "application/json"
+      $.expect.status [ 200 ]
+      $.request
       $.json
       k.get
     ]
 
   fail:
-    _.flow [
-      $.request [
-        $.mode "cors"
-        $.url "https://api.publicapis.org/entries"
-        $.query
-        $.method "get"
-        $.headers accept: "application/json"
-        $.expect.status [ 300 ]
-      ]
-      $.json
-      k.get
-    ]
-
-FubarAPI =
-  fubar:
-    _.flow [
-      $.request [
-        $.mode "cors"
-        $.url "https://api.publicapis.org/fubar"
-        $.method "get"
-        $.expect.ok
-      ]
+    $.start [
+      $.mode "cors"
+      $.url "https://httpbin.org/status/404"
+      $.method "get"
+      $.headers accept: "application/json"
+      $.expect.status [ 200 ]
+      $.request
       $.json
       k.get
     ]
@@ -58,46 +44,16 @@ do ->
       description: "fetch test"
       wait: false
       ->
-
-        {entries} = await PublicAPI.search
-          title: "cat"
-          category: "animals"
-        assert.equal true, _.isArray entries
-        assert.equal true, entries.length > 0
-        assert.equal true, entries[0].API?
+        data = await HTTPBin.get
+          greeting: "hello, world"
+        assert.equal true, _.isObject data
+        assert.equal data.args.greeting, "hello, world"
 
 
     test
       description: "failing fetch test"
       wait: false
-      ->
-        assert.rejects ->
-          {entries} = await PublicAPI.fail
-            title: "cat"
-            category: "animals"
-
-    test
-      description: "grab value from stack",
-      wait: false
-      ->
-        f = _.flow [
-          $.request [
-            $.mode "cors"
-            $.url
-          ]
-          k.context
-          k.get
-          _.get "url"
-        ]
-        url = await f "http://example.com/"
-        assert.equal "http://example.com/", url.href
-
-    test
-      description: "context available in error"
-      wait: false
-      ->
-        assert.rejects (-> FubarAPI.fubar()),
-          (error) -> error.response? && error.status == 404
+      -> assert.rejects -> await HTTPBin.fail()
 
   ]
 
