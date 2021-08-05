@@ -71,6 +71,12 @@ request = _.flow [
   cacheResponse
 ]
 
+data = (fields) ->
+  _.flow [
+    k.read "data"
+    k.poke mask fields
+  ]
+
 url = setter ks.assign _.pipe [
   ks.push (value) -> new URL value
   ks.write "url"
@@ -209,6 +215,7 @@ blob = _.flow [
 export {
   start
   request
+  data
   url
   base
   path
