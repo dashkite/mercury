@@ -57,7 +57,7 @@
     "@dashkite/masonry": "^0.11.11",
     "amen": "^3.0.0",
     "coffeescript": "^2.5.1",
-    "node-fetch": "^3.0.0",
+    "node-fetch": "^2.6.2",
     "panda-quill": "^5.0.0",
     "source-map-support": "^0.5.19"
   }
