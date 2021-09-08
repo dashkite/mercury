@@ -1,3 +1,5 @@
+import * as Mercury from "./error"
+
 failure = do ({codes, message} = {}) ->
 
   codes =
@@ -12,11 +14,7 @@ failure = do ({codes, message} = {}) ->
       "unsupported media type: #{response.headers['content-type']}"
 
   (code, response) ->
-    message = codes[code] response
-    error = new Error "Mercury: #{message}"
-    error.response = response
-    error.status = response?.status
-    error
+    new Mercury.Error (codes[code] response), response
 
 
 export default failure

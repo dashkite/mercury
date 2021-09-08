@@ -71,10 +71,16 @@ request = _.flow [
   cacheResponse
 ]
 
+mask = _.curry (keys, target) ->
+  r = {}
+  for key in keys
+    r[key] = target[key]
+  r
+
 data = (fields) ->
-  _.flow [
-    k.read "data"
-    k.poke mask fields
+  _.pipe [
+    ks.read "data"
+    ks.poke if _.isArray fields then mask fields else _.get fields
   ]
 
 url = setter ks.assign _.pipe [
@@ -107,7 +113,6 @@ parameters = setter ks.assign _.pipe [
   ks.read "template"
   ks.push (template, parameters) -> template.expand parameters
   path
-
 ]
 
 method = setter ks.assign _.pipe [
@@ -236,3 +241,5 @@ export {
   json
   blob
 }
+
+export * from "./error"
