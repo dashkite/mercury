@@ -13,7 +13,8 @@ global.Request ?= fetch.Request
 HTTPBin =
 
   get:
-    $.start [
+    _.flow [
+      $.start
       $.url "https://httpbin.org/get"
       $.query
       $.method "get"
@@ -25,7 +26,8 @@ HTTPBin =
     ]
 
   fail:
-    $.start [
+    _.flow [
+      $.start
       $.mode "cors"
       $.url "https://httpbin.org/status/404"
       $.method "get"

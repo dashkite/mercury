@@ -56,13 +56,7 @@ cacheResponse = _.flow [
   k.discard
 ]
 
-start = (graph) ->
-  _.flow [
-    # set up the stack
-    (data) -> k.Daisho.create [ data ], { data, mode: "cors" }
-    # run the graph
-    _.flow graph
-  ]
+start = (data) -> k.Daisho.create [ data ], { mode: "cors", data }
 
 request = _.flow [
   createRequest
